@@ -1,0 +1,27 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>角色图册加密工具</title>
+<style>body{font:15px/1.7 sans-serif;max-width:560px;margin:20px auto;padding:0 14px}button{padding:7px 16px;margin:6px 4px 6px 0}input[type=text]{width:100%;box-sizing:border-box;padding:7px;margin:4px 0}small{color:#666}</style>
+<h3>角色图册 · 加密工具</h3>
+<p>选好图 → 生成密钥 → 点「加密并下载」，会得到 album_enc.zip。解压后把里面的 <b>album.enc</b> 和 <b>img</b> 文件夹传到你的 GitHub 公开仓库。别人打开链接只能看到乱码，没有密钥看不了。全程在你自己电脑上运行，图不会上传到任何地方。</p>
+<p><b>生活图</b> <input type="file" id="f1" accept="image/*" multiple><br><b>私密图</b> <input type="file" id="f2" accept="image/*" multiple></p>
+<label><input type="checkbox" id="rs" checked> 缩小到最长边 1280（省空间，推荐）</label>
+<p><b>密钥</b>（填进脚本的 ALBUM_KEY，请自己保存好，丢了就解不开）<input type="text" id="key"><button onclick="gen()">随机生成</button></p>
+<button onclick="go()" style="font-size:16px">加密并下载</button><div id="msg"></div>
+<script>
+const $=i=>document.getElementById(i),E=new TextEncoder();
+const rnd=n=>[...crypto.getRandomValues(new Uint8Array(n))].map(b=>b.toString(16).padStart(2,'0')).join('');
+function gen(){$('key').value=rnd(16)}
+async function K(){return crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',E.encode($('key').value.trim())),'AES-GCM',false,['encrypt'])}
+async function enc(k,b){const iv=crypto.getRandomValues(new Uint8Array(12));const c=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,b));const o=new Uint8Array(12+c.length);o.set(iv);o.set(c,12);return o}
+async function img(f){if(!$('rs').checked)return new Uint8Array(await f.arrayBuffer());const bm=await createImageBitmap(f),s=Math.min(1,1280/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*s);cv.height=Math.round(bm.height*s);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.85));return new Uint8Array(await b.arrayBuffer())}
+const T=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t.push(c>>>0)}return t})();
+const crc=b=>{let c=-1;for(const x of b)c=T[(c^x)&255]^(c>>>8);return(c^-1)>>>0};
+function zip(files){const P=[],C=[];let off=0;const a=n=>[n&255,n>>8&255],b=n=>[n&255,n>>8&255,n>>16&255,n>>>24];
+for(const[f,d]of files){const nm=E.encode(f),c=crc(d);const h=new Uint8Array([0x50,0x4b,3,4,20,0,0,0,0,0,0,0,0,0,...b(c),...b(d.length),...b(d.length),...a(nm.length),0,0,...nm]);P.push(h,d);C.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,0,0,0,0,0,0,0,...b(c),...b(d.length),...b(d.length),...a(nm.length),0,0,0,0,0,0,0,0,0,0,0,0,...b(off),...nm]));off+=h.length+d.length}
+const cs=C.reduce((x,y)=>x+y.length,0);const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...a(files.length),...a(files.length),...b(cs),...b(off),0,0]);return new Blob([...P,...C,end],{type:'application/zip'})}
+async function go(){try{const kv=$('key').value.trim();if(kv.length<8){$('msg').textContent='请先生成或填写密钥（至少 8 位）';return}
+const k=await K(),files=[],cats={生活:[],私密:[]};
+for(const[c,id]of[['生活','f1'],['私密','f2']])for(const f of $(id).files){const n='img/'+rnd(10)+'.bin';files.push([n,await enc(k,await img(f))]);cats[c].push({u:n});$('msg').textContent='处理中 '+files.length+' …'}
+if(!files.length){$('msg').textContent='还没有选图';return}
+files.unshift(['album.enc',await enc(k,E.encode(JSON.stringify({cats})))]);
+const a=document.createElement('a');a.href=URL.createObjectURL(zip(files));a.download='album_enc.zip';a.click();$('msg').textContent='完成：共 '+(files.length-1)+' 张。请保存好密钥：'+kv}catch(e){$('msg').textContent='失败：'+e.message}}
+</script></html>

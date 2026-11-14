@@ -1,0 +1,20 @@
+{
+  "cats": {
+    "生活": [
+      {
+        "u": "https://cdn.jsdelivr.net/gh/你的用户名/你的仓库@main/album/life1.jpg",
+        "t": "早餐"
+      },
+      {
+        "u": "https://cdn.jsdelivr.net/gh/你的用户名/你的仓库@main/album/life2.jpg",
+        "t": "训练后"
+      }
+    ],
+    "私密": [
+      {
+        "u": "https://cdn.jsdelivr.net/gh/你的用户名/你的仓库@main/album/p1.jpg",
+        "t": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "display_name": "竹影小手机",
+  "loading_order": 50,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "",
+  "author": "竹安zokiyo",
+  "version": "1.0.0",
+  "homePage": "",
+  "auto_update": true
+}

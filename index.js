@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  const VERSION = '1.0.0';
+  const VERSION = '1.0.1';
   // 角色图册：作者把图放在网上的一个 JSON 里，把链接填到 ALBUM_URL；作者更新这个 JSON，所有人刷新即同步，用户端只读。
   // 格式见「角色图册_示例.json」。也可把少量图直接写进 ALBUM_EMBED（同样格式的 cats）。
   const ALBUM_URL = '';
@@ -405,14 +405,14 @@ ${md === 'pick' ? `<div class="xyp-center" style="flex-wrap:wrap;gap:6px"><span 
 
   // ---------- 正文知道小手机里的事（发送前插入一条短系统消息）----------
   const buildSync = () => {
-    if (!cfg.sync) return ''; const d = D(); const u = myNick(); const keep = Number(cfg.keepN) || 0; const parts = [];
+    if (!cfg.sync) return ''; const d = D(); const u = myNick(); const keep = Number(cfg.keepN) || 0; const parts = []; let callLong = 0;
     d.contacts.forEach((x) => {
       if (dmOnly(x) && !(cfg.lsync && cfg.lsDm !== false)) return;
       const all = d.msgs[x.id] || []; if (!all.length) return;
       let ms = all.filter((m) => m.ts > d.syncTs && !m.src && m.src !== 0);
       if (x.isChar && keep) { const k = all.filter((m) => !(m.src >= 0)).slice(-keep); ms = k.length > ms.length ? k : ms; }
-      const shortDm = dmOnly(x) && all.length <= 20; ms = ms.filter((m) => m.k !== 'sys').slice(shortDm ? -3 : -8); if (!ms.length) return;
-      parts.push((x.isGroup ? `${u}所在的群聊「${x.name}」` : `${u}与${cName(x)}${x.rel ? '（' + x.rel + '）' : ''}`) + '：\n' + ms.filter((m) => m.k !== 'sys').map((m) => (m.r === 'u' ? u : (x.isGroup && getC(m.w) ? cName(getC(m.w)) : cName(x))) + '：' + clip(mtxt(m), dmOnly(x) && all.length <= 20 ? 30 : 60)).join('\n'));
+      const shortDm = dmOnly(x) && all.length <= 20; ms = ms.filter((m) => m.k !== 'sys' && !(m.k === 'call' && m.cs === 'done')).slice(shortDm ? -3 : -8); if (!ms.length) return;
+      parts.push((x.isGroup ? `${u}所在的群聊「${x.name}」` : `${u}与${cName(x)}${x.rel ? '（' + x.rel + '）' : ''}`) + '：\n' + ms.filter((m) => m.k !== 'sys').map((m) => (m.r === 'u' ? u : (x.isGroup && getC(m.w) ? cName(getC(m.w)) : cName(x))) + '：' + clip(mtxt(m), m.k === 'call' && m.ts > d.syncTs ? (callLong = 1, 300) : (dmOnly(x) && all.length <= 20 ? 30 : 60))).join('\n'));
     });
     const vs = d.viewed.filter((v) => v.ts > d.syncTs && (cfg.adult || !ADULT.includes(v.sec))).map((v) => secSummary(v.sec)).filter(Boolean);
     if (vs.length) parts.push(`${u}刚翻看了${cName(getC('char'))}的手机：` + vs.map((s) => clip(s, 160)).join('；'));
@@ -423,7 +423,7 @@ ${md === 'pick' ? `<div class="xyp-center" style="flex-wrap:wrap;gap:6px"><span 
     if (evs.length) parts.push('手机上的其他事：' + evs.join('；') + '（直播等私下行为，角色通常不知道，是否知道由你按剧情判断）');
     if (!parts.length) return '';
     ne.forEach((e) => { e.n = (e.n || 0) + 1; });
-    return clip('【小手机】' + u + '的手机动态，仅作背景：是否反应由你按剧情和性格定，不必立刻回应、不要复述原文。\n' + parts.join('\n'), 650);
+    return clip('【小手机】' + u + '的手机动态，仅作背景：是否反应由你按剧情和性格定，不必立刻回应、不要复述原文。\n' + parts.join('\n'), 650 + (callLong ? 280 : 0));
   };
   // 角色自己手机里的内容：角色本人清楚（含与别人的聊天），持续提示给正文，user只知道翻看过的
   const buildCp = () => {
@@ -1081,7 +1081,7 @@ ${fabUI()}${decoHtml(o)}<div class="xyp-h">导入主题</div>
   const startCall = (id, mode, by) => { call = { id, mode, by, t0: Date.now(), log: [], busy: false }; go('call', { id }); callTurn(by === 'u' ? '（电话接通了，请你先开口）' : '（你拨出的电话被对方接起来了，请你先开口）'); };
   const endCall = () => {
     if (!call) return; const c = call; call = null; const x = getC(c.id); const dur = fmtDur(Date.now() - c.t0); const ml = c.mode === 'video' ? '视频' : '语音'; const u = myNick();
-    if (x && c.log.length) { const sum = clip(c.log.filter((q) => q.t).slice(-6).map((q) => (q.r === 'u' ? u : cName(x)) + '：' + q.t).join(' / '), 220); pushX(c.id, c.by, `${ml}通话，时长${dur}，内容摘要：${sum}`, 'call', { cs: 'done', cm: c.mode, dur }); if (x.isChar) pushEvent(`${u}与${cName(x)}通了${dur}的${ml}电话`, true); save(); }
+    if (x && c.log.length) { const sum = clip(c.log.filter((q) => q.t).slice(-8).map((q) => (q.r === 'u' ? u : cName(x)) + '：' + clip(q.t, 40)).join(' / '), 270); pushX(c.id, c.by, `${ml}通话，时长${dur}，内容摘要：${sum}`, 'call', { cs: 'done', cm: c.mode, dur }); { const full = clip(c.log.filter((q) => q.t).map((q) => (q.r === 'u' ? u : cName(x)) + '：' + clip(q.t, 50)).join(' / '), 320); pushEvent(`${u}与${cName(x)}通了${dur}的${ml}电话（${c.by === 'c' ? cName(x) + '打来' : u + '打去'}），通话内容：${full}`, !!x.isChar); } save(); }
     if (cur().p === 'call') back(); else render();
   };
   const ringIn = (x, mode) => {

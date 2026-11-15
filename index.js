@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  const VERSION = '1.0.3';
+  const VERSION = '1.0.4';
   // 角色图册：作者把图放在网上的一个 JSON 里，把链接填到 ALBUM_URL；作者更新这个 JSON，所有人刷新即同步，用户端只读。
   // 格式见「角色图册_示例.json」。也可把少量图直接写进 ALBUM_EMBED（同样格式的 cats）。
   const ALBUM_URL = '';
@@ -886,12 +886,12 @@ const ageGate = (fn) => { confirmBox('年龄确认', '查手机和直播里含�
   const pageWx = (o) => {
     const tab = o.tab || 'chats'; const d = D(); let body = '';
     if (tab === 'chats') {
-      const list = d.contacts.filter((x) => wxOk(x) && (x.isChar || x.isGroup || (d.msgs[x.id] || []).length)).sort((a, b) => ((lastOf(b) || {}).ts || 0) - ((lastOf(a) || {}).ts || 0));
-      body = list.map((x) => { const m = lastOf(x); return `<div class="xyp-li" data-act="chat" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${esc(cName(x))}${x.share ? '<span class="xyp-lc"></span>' : ''}${x.unread ? `<span class="xyp-bdg">${x.unread}</span>` : ''}</b><small>${m ? esc(clip((x.isGroup && getC(m.w) ? cName(getC(m.w)) + '：' : '') + (m.k === 'sys' ? '' : mtxt(m)), 30)) : '点击开始聊天'}</small></div><span class="t">${m ? hhmm(m.ts) : ''}</span></div>`; }).join('');
+      const list = d.contacts.filter((x) => wxOk(x) && (x.isChar || x.isGroup || x.pin || (d.msgs[x.id] || []).length)).sort((a, b) => ((b.pin ? 1 : 0) - (a.pin ? 1 : 0)) || (((lastOf(b) || {}).ts || 0) - ((lastOf(a) || {}).ts || 0)));
+      body = list.map((x) => { const m = lastOf(x); return `<div class="xyp-li" data-act="chat" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${x.pin ? '📌 ' : ''}${esc(cName(x))}${x.share ? '<span class="xyp-lc"></span>' : ''}${x.unread ? `<span class="xyp-bdg">${x.unread}</span>` : ''}</b><small>${m ? esc(clip((x.isGroup && getC(m.w) ? cName(getC(m.w)) + '：' : '') + (m.k === 'sys' ? '' : mtxt(m)), 30)) : '点击开始聊天'}</small></div><span class="t">${m ? hhmm(m.ts) : ''}</span></div>`; }).join('');
     } else if (tab === 'mom') {
       body = pageMom({ as: 'u' }).replace(/^<div class="xyp-pg">/, '').replace(/<\/div>$/, '');
     } else if (tab === 'book') {
-      body = `<div class="xyp-li" data-act="newc"><span class="xyp-av xyp-avt" style="background:#07c160">＋</span><div class="m"><b>添加联系人</b></div></div><div class="xyp-li" data-act="newg"><span class="xyp-av xyp-avt" style="background:#576b95">群</span><div class="m"><b>创建群聊</b></div></div><div class="xyp-li" data-act="genc"><span class="xyp-av xyp-avt" style="background:#8e8e93">？</span><div class="m"><b>生成联系人</b><small>${npcBusy || gcBusy ? '生成中……' : '补全正文里的角色 / 随机NPC'}</small></div></div>` + d.contacts.filter((x) => !x.live || x.friend).map((x) => `<div class="xyp-li" data-act="${x.isGroup ? 'editg' : 'edit'}" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${esc(cName(x))}${x.share ? '<span class="xyp-lc"></span>' : ''}</b><small>${esc(x.isGroup ? '群聊 · ' + (x.members || []).length + '人' : (x.rel || (x.isChar ? '主角色' : '未设置关系')))}</small></div>${x.isChar ? '' : `<span class="xyp-btn dng" data-act="delc2" data-id="${x.id}" style="margin:0">${o.dc === x.id ? '确认删除' : '删除'}</span>`}</div>`).join('');
+      body = `<div class="xyp-li" data-act="newc"><span class="xyp-av xyp-avt" style="background:#07c160">＋</span><div class="m"><b>添加联系人</b></div></div><div class="xyp-li" data-act="newg"><span class="xyp-av xyp-avt" style="background:#576b95">群</span><div class="m"><b>创建群聊</b></div></div><div class="xyp-li" data-act="genc"><span class="xyp-av xyp-avt" style="background:#8e8e93">？</span><div class="m"><b>生成联系人</b><small>${npcBusy || gcBusy ? '生成中……' : '补全正文里的角色 / 随机NPC'}</small></div></div>` + d.contacts.filter((x) => !x.live || x.friend).map((x) => `<div class="xyp-li" data-act="${x.isGroup ? 'editg' : 'edit'}" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${esc(cName(x))}${x.share ? '<span class="xyp-lc"></span>' : ''}</b><small>${esc(x.isGroup ? '群聊 · ' + (x.members || []).length + '人' : (x.rel || (x.isChar ? '主角色' : '未设置关系')))}</small></div><span class="xyp-btn" data-act="chat" data-id="${x.id}" style="margin:0 6px 0 0">聊天</span>${x.isChar ? '' : `<span class="xyp-btn dng" data-act="delc2" data-id="${x.id}" style="margin:0">${o.dc === x.id ? '确认删除' : '删除'}</span>`}</div>`).join('');
     } else {
       body = `<div class="xyp-center">${av(uAv(), myNick(), 'lg')}<div style="margin-top:8px"><span class="xyp-btn" data-act="upav" data-t="user">更换头像</span>${d.user.avatar ? '<span class="xyp-btn" data-act="clrav" data-t="user">恢复默认</span>' : ''}</div></div>
 <div class="xyp-f"><label>网名</label><input id="xyp-nick" value="${esc(d.user.nick)}" placeholder="${esc(uName())}" data-me="nick"></div>
@@ -920,7 +920,7 @@ ${isNew || x.isGroup ? '' : `<div class="xyp-f"><label>主动打电话</label><s
 <div class="xyp-f"><label>通话背景</label><span style="flex:1;font-size:12px;opacity:.7">${(o.bg !== undefined ? o.bg : x.callBg) ? '已设置' : '未设置'}</span><span class="xyp-btn" data-act="upbg" style="margin:0">选择图片</span><span class="xyp-btn" data-act="clrbg" style="margin:0 0 0 6px">清除</span></div>`}
 ${isNew || x.isChar || x.isGroup ? '' : `<div class="xyp-f"><label>知道我的真名</label><select id="xyp-f-kr"><option value="0" ${x.kr ? '' : 'selected'}>不知道（只知道我的网名）</option><option value="1" ${x.kr ? 'selected' : ''}>知道</option></select></div>`}
 <div class="xyp-f"><label>知晓正文</label><select id="xyp-f-know"><option value="auto" ${x.know === 'auto' ? 'selected' : ''}>自动（正文里出现过才知道）</option><option value="yes" ${x.know === 'yes' ? 'selected' : ''}>一直知道</option><option value="no" ${x.know === 'no' ? 'selected' : ''}>完全不知道</option></select></div>
-<div class="xyp-center"><span class="xyp-btn pri" data-act="savec">保存</span>${isNew ? '' : '<span class="xyp-btn" data-act="clrchat">清空聊天记录' + (o.cc ? '（再点确认）' : '') + '</span>'}${isNew || x.isChar ? '' : `<span class="xyp-btn dng" data-act="delc">${o.del ? '确认删除' : '删除联系人'}</span>`}</div></div>`;
+<div class="xyp-center"><span class="xyp-btn pri" data-act="savec">保存</span>${isNew ? '' : `<span class="xyp-btn" data-act="pinc" data-id="${esc(x.id)}">${x.pin ? '取消置顶' : '置顶聊天'}</span><span class="xyp-btn" data-act="chat" data-id="${esc(x.id)}">发消息</span>`}${isNew ? '' : '<span class="xyp-btn" data-act="clrchat">清空聊天记录' + (o.cc ? '（再点确认）' : '') + '</span>'}${isNew || x.isChar ? '' : `<span class="xyp-btn dng" data-act="delc">${o.del ? '确认删除' : '删除联系人'}</span>`}</div></div>`;
   };
   const tog = (k, label, tip) => `<div class="xyp-f xyp-tog"><div><div style="font-size:14px">${label}</div>${tip ? `<div class="xyp-tip" style="padding:2px 0 0">${tip}</div>` : ''}</div><input type="checkbox" data-cfgb="${k}" ${cfg[k] ? 'checked' : ''}></div>`;
   let setQ = '';
@@ -1843,6 +1843,7 @@ else if (a === 'decoapply') { decoRead(); saveCfg(); applyTheme(); o.exp = ''; r
       if ($('xyp-f-persona')) x.persona = $('xyp-f-persona').value.trim(); if (o.av !== undefined) x.avatar = o.av;
       save(); back();
     }
+    else if (a === 'pinc') { const x9 = getC(t.dataset.id); if (x9) { x9.pin = !x9.pin; save(); render(); } }
     else if (a === 'clrchat') { if (!o.cc) { o.cc = true; render(); return; } D().msgs[o.id] = []; save(); o.cc = false; render(); }
     else if (a === 'delc2') { if (o.dc !== t.dataset.id) { o.dc = t.dataset.id; render(); return; } const d = D(); dropStreamer(getC(o.dc)); d.contacts = d.contacts.filter((x) => x.id !== o.dc); delete d.msgs[o.dc]; o.dc = ''; save(); render(); }
     else if (a === 'delc') { if (!o.del) { o.del = true; render(); return; } const d = D(); dropStreamer(getC(o.id)); d.contacts = d.contacts.filter((x) => x.id !== o.id); delete d.msgs[o.id]; save(); back(); }

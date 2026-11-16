@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  const VERSION = '1.0.4';
+  const VERSION = '1.1.0';
   // 角色图册：作者把图放在网上的一个 JSON 里，把链接填到 ALBUM_URL；作者更新这个 JSON，所有人刷新即同步，用户端只读。
   // 格式见「角色图册_示例.json」。也可把少量图直接写进 ALBUM_EMBED（同样格式的 cats）。
   const ALBUM_URL = '';
@@ -259,7 +259,7 @@ const buildChat = (x, flag, vis) => {
 grpCtx(x),
 fcChatRule(x),
 k && story ? `你已经知道的近期剧情（只使用你亲身经历或知情的部分，不要凭空知道别人的秘密）：\n${story}` : `你不知道对方最近经历了什么，只根据聊天内容回应。`,
-      (cfg.upSync && x.pid ? upCtx(x.pid) : '') + (cfg.dmLink !== false && linkOf(x) ? `你们此前在${x.live ? '微信' : '直播平台私信'}里聊过（你都记得）：${dmSum(linkOf(x).id)}。\n` : '') + (x.rmf > 0 ? (x.rmf--, '对方刚把你移出了粉丝列表，你可以询问原因或挽留，也可以不在意，按你的人设。\n') : '') + (x.live ? `你是直播平台的主播，对方是你直播间的观众${x.friend ? '，你们已经交换了微信' : '，目前只在直播平台私信'}。${liveCtx(x)}` : '') + (flag === 'loc' ? `\n用户请求查看你的位置。你自己决定是否同意（符合人设和你们的关系）：同意就单独一行写「【定位】具体地点」（符合当前剧情和时间），再正常说话；不同意就自然拒绝，不要写【定位】。` : flag === 'exch' ? `\n对方提出交换微信联系方式。你自己决定是否同意（符合人设和相处情况）：同意就单独一行写「【同意】」并正常说话，表示你会主动加对方微信；不同意就委婉拒绝，不要写【同意】。` : ''),
+      fmCtx(x) + (cfg.upSync && x.pid ? upCtx(x.pid) : '') + (cfg.dmLink !== false && linkOf(x) ? `你们此前在${x.live ? '微信' : '直播平台私信'}里聊过（你都记得）：${dmSum(linkOf(x).id)}。\n` : '') + (x.rmf > 0 ? (x.rmf--, '对方刚把你移出了粉丝列表，你可以询问原因或挽留，也可以不在意，按你的人设。\n') : '') + (x.live ? `你是直播平台的主播，对方是你直播间的观众${x.friend ? '，你们已经交换了微信' : '，目前只在直播平台私信'}。${liveCtx(x)}` : '') + (flag === 'loc' ? `\n用户请求查看你的位置。你自己决定是否同意（符合人设和你们的关系）：同意就单独一行写「【定位】具体地点」（符合当前剧情和时间），再正常说话；不同意就自然拒绝，不要写【定位】。` : flag === 'exch' ? `\n对方提出交换微信联系方式。你自己决定是否同意（符合人设和相处情况）：同意就单独一行写「【同意】」并正常说话，表示你会主动加对方微信；不同意就委婉拒绝，不要写【同意】。` : ''),
       `先读清聊天记录里谁对谁做了什么、谁是主动方：${u}说的话和做的事是${u}的，不要当成自己的，也不要把双方角色对调或反过来问对方；以你自己的身份和立场接着回应。语气严格贴合人设原本的性格和说话习惯，不要写成霸道总裁、命令式或油腻的口吻；性格软萌就保持软萌，口语化、自然。不要输出<标签>、「甲→乙：」这类格式或名字前缀，只写消息正文。`,
       (cfg.sty || '').trim() ? '额外要求（必须遵守）：' + cfg.sty.replace(/\{\{user\}\}/g, u) : '',
       (() => { const pf0 = x.pid && (LV().prof || {})[x.pid]; return pf0 && !pf0.sf && !pf0.gone ? `如果你愿意关注${u}（比如对方请你关注你），就在回复里单独写一行【关注】，这样才真的关注；不愿意就不要说已经关注。` : ''; })(),
@@ -470,7 +470,7 @@ SEC.usage = { n: '使用记录', ico: '📊', bg: '#0ea5e9', max: 3200, ask: '�
       if (!data || !Array.isArray(data.chat)) return;
       data.chat.forEach((m) => { if (m && typeof m.content === 'string' && m.content.includes('<手机>')) m.content = m.content.replace(MARK_RE, '').trim(); });
       if (data.dryRun) return;
-      try { batScan(); } catch (e) {} const t = [buildBat(), buildUse(), buildSync(), fcRule(), buildCp(), buildLive(), buildUp(), buildNpc(), buildLock(), hintText()].filter(Boolean).join('\n'); if (!t) return; if (data.chat.some((m) => m && m.content === t)) return;
+      try { batScan(); } catch (e) {} const t = [buildBat(), buildUse(), buildSync(), fcRule(), buildCp(), buildLive(), buildFm(), buildUp(), buildNpc(), buildLock(), hintText()].filter(Boolean).join('\n'); if (!t) return; if (data.chat.some((m) => m && m.content === t)) return;
       data.chat.splice(Math.max(0, data.chat.length - 2), 0, { role: 'system', content: t });
     } catch (e) { console.warn('[st-phone]', e); }
   };
@@ -567,7 +567,7 @@ SEC.usage = { n: '使用记录', ico: '📊', bg: '#0ea5e9', max: 3200, ask: '�
 .xyp-home{padding:26px 20px}
 .xyp-clock{text-align:center;font-size:44px;font-weight:300;margin:24px 0 36px;letter-spacing:2px}
 .xyp-apps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 8px}
-.xyp-app{text-align:center;cursor:pointer;touch-action:pan-y;-webkit-touch-callout:none;user-select:none}.xyp-app.drag{position:relative;z-index:6;transition:none!important;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3));cursor:grabbing}
+.xyp-app{text-align:center;cursor:pointer;touch-action:manipulation;-webkit-touch-callout:none;user-select:none}.xyp-app.drag{position:relative;z-index:6;transition:none!important;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3));cursor:grabbing}
 .xyp-app i{display:flex;width:54px;height:54px;margin:0 auto 6px;border-radius:14px;align-items:center;justify-content:center;font-size:26px;font-style:normal;color:#fff}
 .xyp-app b{font-size:12px;font-weight:500}
 .xyp-tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);background:#f7f7f7;border-top:1px solid #dcdcdc}
@@ -648,6 +648,9 @@ SEC.usage = { n: '使用记录', ico: '📊', bg: '#0ea5e9', max: 3200, ask: '�
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=settings] i::before{content:'设'}
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=live] i::before{content:'播'}
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=mywal] i::before{content:'钱'}
+.xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=store] i::before{content:'店'}
+.xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=xhs] i::before{content:'草'}
+.xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=xx] i::before{content:'帖'}
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=loc] i::before{content:'位'}.xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=shop] i::before{content:'购'}
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-p=theme] i::before{content:'美'}
 .xyp-win:is(.th-bw,.th-night,.th-clr) .xyp-app[data-sec=wallet] i::before{content:'钱'}
@@ -879,8 +882,8 @@ const ageGate = (fn) => { confirmBox('年龄确认', '查手机和直播里含�
   const unrWx = () => D().contacts.some((x) => x.unread > 0 && wxOk(x)); const unrDm = () => D().contacts.some((x) => x.unread > 0 && dmOnly(x));
   const pageHome = () => {
     const d = new Date();
-    const apps = [{ k: 'wx', h: '<i style="background:#07c160">💬</i><b>微信</b>' }, { k: 'cp', h: '<i style="background:#111">🔍</i><b>查手机</b>' }, { k: 'live', h: '<i style="background:#ef4444">📺</i><b>直播</b>' }, { k: 'mywal', h: '<i style="background:#f59e0b">👛</i><b>钱包</b>' }, { k: 'shop', h: '<i style="background:#f97316">🛒</i><b>购物</b>' }, { k: 'loc', h: '<i style="background:#3b82f6">📍</i><b>定位</b>' }, ...(albumOn() ? [{ k: 'album', h: '<i style="background:#0ea5e9">图</i><b>角色图册</b>' }] : []), { k: 'theme', h: '<i style="background:#a78bfa">🎨</i><b>美化</b>' }, { k: 'settings', h: '<i style="background:#8e8e93">⚙️</i><b>设置</b>' }];
-    return `<div class="xyp-pg xyp-home xyp-desk"><div class="xyp-clock">${hhmm(d)}</div><div class="xyp-apps" data-ord="home">${ordered(apps, 'home').map((a) => `<div class="xyp-app" data-act="open" data-p="${a.k}">${a.h}${(a.k === 'wx' && unrWx()) || (a.k === 'live' && unrDm()) ? '<span class="xyp-dot"></span>' : ''}</div>`).join('')}</div><div class="xyp-tip" style="text-align:center;margin-top:30px">长按图标可拖动调整顺序</div></div>`;
+    const apps = [{ k: 'wx', h: '<i style="background:#07c160">💬</i><b>微信</b>' }, { k: 'cp', h: '<i style="background:#111">🔍</i><b>查手机</b>' }, { k: 'live', h: '<i style="background:#ef4444">📺</i><b>直播</b>' }, ...fmApps(), { k: 'mywal', h: '<i style="background:#f59e0b">👛</i><b>钱包</b>' }, { k: 'shop', h: '<i style="background:#f97316">🛒</i><b>购物</b>' }, { k: 'loc', h: '<i style="background:#3b82f6">📍</i><b>定位</b>' }, ...(albumOn() ? [{ k: 'album', h: '<i style="background:#0ea5e9">图</i><b>角色图册</b>' }] : []), { k: 'theme', h: '<i style="background:#a78bfa">🎨</i><b>美化</b>' }, { k: 'settings', h: '<i style="background:#8e8e93">⚙️</i><b>设置</b>' }];
+    return `<div class="xyp-pg xyp-home xyp-desk"><div class="xyp-clock">${hhmm(d)}</div><div class="xyp-pgs">${fmPg(ordered(apps, 'home')).map((pg) => `<div class="xyp-apps" data-ord="home">${pg.map((a) => `<div class="xyp-app" data-act="open" data-p="${a.k}">${a.h}${(a.k === 'wx' && unrWx()) || (a.k === 'live' && unrDm()) ? '<span class="xyp-dot"></span>' : ''}</div>`).join('')}</div>`).join('')}</div>${homeDots(fmPg(ordered(apps, 'home')).length)}<div class="xyp-tip" style="text-align:center;margin-top:30px">长按图标可拖动调整顺序</div></div>`;
   };
   const lastOf = (x) => { const a = D().msgs[x.id] || []; return a[a.length - 1]; };
   const pageWx = (o) => {
@@ -949,7 +952,7 @@ ${isNew || x.isChar || x.isGroup ? '' : `<div class="xyp-f"><label>知道我的�
 <div class="xyp-f"><label>最长输出</label><input data-cfg="max" type="number" step="50" min="50" value="${esc(cfg.max)}"></div>
 <div class="xyp-center"><span class="xyp-btn" data-act="stfill">读取酒馆接口</span><span class="xyp-btn" data-act="stinfo" title="说明" style="padding-left:12px;padding-right:12px">?</span><span class="xyp-btn pri" data-act="test">测试连接</span><div class="xyp-tip" id="xyp-test">${esc(o.test || '地址留空时，会尝试使用酒馆当前连接。密钥只保存在本浏览器里。')}</div>${o.stinfo ? '<div class="xyp-tip" style="border:1px dashed var(--line,#bbb);padding:6px 8px;margin-top:6px;text-align:left">点「读取酒馆接口」会把酒馆当前连接的地址填进来。想连密钥一起读取，需要在酒馆的 config.yaml 里把 allowKeysExposure 设为 true，重启酒馆后再点一次。</div>' : ''}</div>
 <details class="xyp-sub"><summary class="xyp-h">单独接口（可选，点开设置，留空则用上面的）</summary>
-${['live:直播', 'wx:微信', 'cp:查手机'].map((q) => { const [k, n] = q.split(':'); const a = (cfg.ap && cfg.ap[k]) || {}; return `<div class="xyp-h" style="font-size:13px;margin-top:10px">${n}接口</div><div class="xyp-f"><label>地址</label><input data-ap="${k}.url" value="${esc(a.url || '')}" placeholder="地址，留空=用主接口"></div><div class="xyp-f"><label>密钥</label><input data-ap="${k}.key" type="password" value="${esc(a.key || '')}"></div><div class="xyp-f"><label>模型</label><input data-act="pickm" data-k="${k}" readonly value="${esc(a.model || '')}" placeholder="点击选择（留空=用主接口的模型）"></div>`; }).join('')}</details>
+${['live:直播', 'wx:微信', 'cp:查手机'].concat(FM().apps.filter((q) => FMA[q]).map((q) => q + ':' + FMA[q].n)).map((q) => { const [k, n] = q.split(':'); const a = (cfg.ap && cfg.ap[k]) || {}; return `<div class="xyp-h" style="font-size:13px;margin-top:10px">${n}接口</div><div class="xyp-f"><label>地址</label><input data-ap="${k}.url" value="${esc(a.url || '')}" placeholder="地址，留空=用主接口"></div><div class="xyp-f"><label>密钥</label><input data-ap="${k}.key" type="password" value="${esc(a.key || '')}"></div><div class="xyp-f"><label>模型</label><input data-act="pickm" data-k="${k}" readonly value="${esc(a.model || '')}" placeholder="点击选择（留空=用主接口的模型）"></div>`; }).join('')}</details>
 ${igUI(o)}
 ${wbUI(o)}
 <div class="xyp-center" style="margin:10px 0"><span class="xyp-btn pri" data-act="tkopen">省 token 模式</span></div>
@@ -1591,6 +1594,184 @@ return `<div class="xyp-pg xyp-form"><div style="display:flex;gap:6px;overflow-x
 const shopEditDlg = () => { const cs = SH().cats || (SH().cats = SHOP_ALL()); showDlg(`<div class="bx"><b>编辑种类</b><div style="max-height:46vh;overflow-y:auto;margin:10px 0;text-align:left">${cs.map((c, i) => `<div style="display:flex;align-items:center;padding:7px 2px;border-bottom:1px solid rgba(128,128,128,.25)"><span style="flex:1">${esc(c)}</span><span data-act="shopcup" data-i="${i}" style="padding:4px 12px">↑</span><span data-act="shopcdn" data-i="${i}" style="padding:4px 12px">↓</span><span data-act="shopcdel" data-i="${i}" style="padding:4px 12px">✕</span></div>`).join('') || '<div style="opacity:.6;padding:10px">还没有种类，点下面添加</div>'}</div><div class="bt"><span data-act="shopcadd">添加种类</span><span class="ok" data-act="dlgno">完成</span></div></div>`); };
 const pageShopMe = () => { const os = SH().orders; return `<div class="xyp-pg xyp-form">${os.length ? os.map((od) => { const st = orderSt(od); return `<div class="xyp-card" style="padding:10px 12px"><div style="display:flex;justify-content:space-between"><b>${esc(od.n)}</b><b>${fmt$(od.p)}</b></div><div style="font-size:12px;opacity:.7;margin:3px 0">${od.to ? '送给 ' + esc(od.tn) : '自己买的'} · ${esc(od.pay)} · ${fmtT(od.ts)}</div><div style="display:flex;gap:4px;margin-top:6px">${['待发货', '运输中', '已签收'].map((t, i) => `<span style="flex:1;text-align:center;font-size:12px;padding:3px 0;border:1px solid currentColor;opacity:${i <= st[1] ? 1 : .3};${i === st[1] ? 'font-weight:bold' : ''}">${t}</span>`).join('')}</div><div style="font-size:12px;opacity:.7;margin-top:4px">${st[1] === 2 ? (od.to ? esc(od.tn) + '已签收' : '已签收') : st[1] === 1 ? '快递在路上' : '商家正在备货'}${st[1] < 2 ? '<span class="xyp-btn" style="float:right;margin:-6px 0 0;height:26px;line-height:26px;padding:0 10px" data-act="shoparr" data-id="'+od.id+'">立即到货</span>' : ''}</div></div>`; }).join('') : '<div class="xyp-center" style="opacity:.6;padding:40px">还没有订单</div>'}</div>`; };
 const PAGES = { home: pageHome, album: pageAlbum, mom: pageMom, wx: pageWx, chat: (o) => { const x = getC(o.id); return `<div class="xyp-chead" data-act="${x && x.isGroup ? 'editg' : x && x.live && !x.friend ? 'exch' : 'edit'}" data-id="${esc(o.id)}"><span>${x ? esc(x.isGroup ? '群成员：' + grpMembers(x).map(cName).join('、') : x.live && !x.friend ? '直播私信 · ' + (x.rel || '主播') : (x.remark ? '备注：' + x.remark : '未设置备注') + (x.rel ? ' · ' + x.rel : ' · 未设置关系')) : ''}</span><b>${x && x.isGroup ? '群设置 ›' : x && x.live && !x.friend ? '交换联系方式 ›' : IC.gear}</b></div>${x && x.live ? `<div class="xyp-chead" data-act="gotoroom" data-id="${esc(x.id)}"><span>${esc(cName(x))} 的直播间</span><b>进入 ›</b></div>` : ''}<div class="xyp-msgs" id="xyp-msgs"></div>${plusPanel(o, x)}<div class="xyp-comp">${x && !x.isGroup && !dmOnly(x) ? '<button data-act="plus" title="更多">＋</button>' : ''}<textarea id="xyp-in" rows="1" placeholder="发消息…"></textarea>${x && !x.isGroup && !dmOnly(x) ? `<button class="stkb" data-act="stk" title="表情包">${IC.stk}</button>` : ''}<button class="pri sb" id="xyp-sb" data-act="reply" title="让TA回复">${SB.r}</button></div>`; }, contact: pageContact, group: pageGroup, live: pageLive, mylv: pageMyLv, prof: pageProf, dms: pageDms, room: pageRoom, mywal: pageMyWal, shop: pageShop, shopme: pageShopMe, loc: pageLoc, locd: pageLocd, settings: pageSettings, theme: pageTheme, cp: pageCp, cpsec: pageSec, cpchat: pageCpChat, call: pageCall };
+// ===== 论坛：应用商店 + 种草（图文笔记）+ 短帖（时间线） =====
+const FMA = { xhs: { n: '种草', ic: '📕', bg: '#ff2442', sub: '图文笔记社区：刷笔记、发笔记、评论、私信' }, xx: { n: '短帖', ic: '✕', bg: '#111', sub: '短帖时间线：发短帖、转评赞、私信' } };
+function FM() { const d = D(); if (!d.fm) d.fm = { apps: [], pend: [] }; const f = d.fm; if (!f.apps) f.apps = []; if (!f.pend) f.pend = []; ['xhs', 'xx'].forEach((k) => { if (!f[k]) f[k] = { acc: [], posts: [], dm: {}, me: '' }; const q = f[k]; if (!q.nt) q.nt = []; if (!q.fol) q.fol = []; if (!q.fw) q.fw = {}; if (!q.sn) q.sn = []; }); return f; }
+function fmApps() { const f = FM(); return [{ k: 'store', h: '<i style="background:#0ea5e9">🛍</i><b>应用商店</b>' }].concat(f.apps.filter((k) => FMA[k]).map((k) => ({ k, h: `<i style="background:${FMA[k].bg}">${FMA[k].ic}</i><b>${FMA[k].n}</b>` }))); }
+function fmEv(s) { const f = FM(); const kk = String(s).indexOf('种草') >= 0 ? 'xhs' : String(s).indexOf('短帖') >= 0 ? 'xx' : ''; if (kk && f[kk].tell === false) return; f.pend.push(s); f.pend = f.pend.slice(-14); save(); }
+function buildFm() { try { const f = FM(); const out = []; if (f.pend.length) { out.push(clip('【论坛动态】' + f.pend.join('；'), 320) + '，仅作背景，可酌情在剧情里体现，不必复述。'); f.pend = []; }
+  let recent = ''; try { recent = (getCtx().chat || []).slice(-6).map((m) => (m && m.mes) || '').join('\n'); } catch (e) { /* ignore */ }
+  const u = myNick(); const Nr = cfg.cpKnow === 'once' ? 1 : 3; const bits = [];
+  D().contacts.forEach((x) => { if (!x.fmLink) return; ['xhs', 'xx'].forEach((k) => { if (!x.fmLink[k] || f[k].tell === false) return; const talked = (D().msgs[x.id] || []).some((q) => q.r === 'u'); if (!(talked || recent.includes(cName(x)) || recent.includes(x.name))) return; const S = f[k]; const b = [];
+    const ps = S.posts.filter((p) => (p.cid === x.id || p.au === x.name) && !p.mine && (p.n || 0) < Nr).slice(0, 1); ps.forEach((p) => { p.n = (p.n || 0) + 1; }); if (ps.length) b.push('最新帖「' + clip(ps[0].ti || ps[0].tx, 24) + '」');
+    const dm = (S.dm[x.id] || []).filter((m) => m.t && (m.n || 0) < Nr).slice(-2); dm.forEach((m) => { m.n = (m.n || 0) + 1; }); if (dm.length) b.push('私信：' + dm.map((m) => (m.r === 'u' ? u : cName(x)) + '：' + clip(m.t, 26)).join(' / '));
+    if (b.length) bits.push(cName(x) + '（已加微信，' + FMA[k].n + '）：' + b.join('；')); }); });
+  if (bits.length) out.push(clip('【论坛·已加微信的人】仅作背景，不必复述：\n' + bits.join('\n'), 300));
+  if (!out.length) return ''; save(); return out.join('\n'); } catch (e) { return ''; } }
+function fmMe(k) { return FM()[k].me || myNick(); }
+function fmAcc(k) { const f = FM(); return f[k].acc.map((id) => getC(id)).filter((x) => x && !x.isGroup); }
+function fmPersona(x) { return x.isChar ? '角色设定：' + clip(charCard(), 700) : (x.persona ? '人物设定：' + clip(x.persona, 300) : '（没有详细设定，按名字和关系合理扮演）'); }
+function fmCtx(x) { try { if (!x || !x.fmLink) return ''; const f = FM(); const out = []; ['xhs', 'xx'].forEach((k) => { const l = (f[k].dm[x.id] || []).slice(-6); if (l.length && x.fmLink[k]) out.push(FMA[k].n + '私信：' + l.map((m) => (m.r === 'u' ? '对方' : '你') + '：' + clip(m.t, 40)).join(' / ')); }); return out.length ? '你们已经交换了联系方式，此前在论坛私信里聊过（你都记得）：' + out.join('；') + '。\n' : ''; } catch (e) { return ''; } }
+const fmBusy = {};
+let fmTi = ''; doc.addEventListener('input', (e) => { const t = e.target; if (t && t.id === 'fm-ti') fmTi = t.value; }, true);
+let homePg = 0;
+function fmPg(arr) { const r = []; for (let i = 0; i < arr.length; i += 8) r.push(arr.slice(i, i + 8)); return r.length ? r : [[]]; }
+function homeDots(n) { if (n < 2) return ''; if (homePg >= n) homePg = n - 1; setTimeout(() => { const e = winEl.querySelector('.xyp-pgs'); if (e) e.scrollLeft = homePg * e.clientWidth; }, 0); return '<div class="xyp-dots">' + Array.from({ length: n }, (_, i) => `<i class="${i === homePg ? 'on' : ''}" data-act="fm_hpg" data-i="${i}"></i>`).join('') + '</div>'; }
+winEl.addEventListener('scroll', (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains('xyp-pgs') || !t.clientWidth) return; const i = Math.round(t.scrollLeft / t.clientWidth); if (i !== homePg) { homePg = i; const ds = winEl.querySelectorAll('.xyp-dots i'); ds.forEach((d, j) => d.classList.toggle('on', j === i)); } }, true);
+
+function fmFans(k, name) { const S = FM()[k]; const a = []; if (S.fol.indexOf(name) >= 0) a.push(fmMe(k)); Object.keys(S.fw).forEach((n) => { if (n !== name && (S.fw[n] || []).indexOf(name) >= 0) a.push(n); }); return a; }
+function fmFol(k, name) { const S = FM()[k]; return (S.fw[name] || []).slice(); }
+function fmDmKey(o) { return o.sn ? 's:' + o.sn : o.id; }
+const fmHue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const fmGenFeed = guard('生成帖子', async (k, near) => {
+  const f = FM(); if (fmBusy[k]) return; fmBusy[k] = 1; render();
+  try {
+    const A = FMA[k]; const acc = fmAcc(k); const u = fmMe(k); let story = ''; try { story = storyText(2, 700); } catch (e) { /* ignore */ }
+    const sys = `你负责生成虚构社区「${A.n}」（${k === 'xhs' ? '图文笔记' : '短帖'}风格）首页的一批帖子。` + (acc.length ? `有账号的人：\n${acc.map((x) => '【' + cName(x) + '】' + fmPersona(x)).join('\n')}\n他们按各自人设和近期剧情自然地发帖（不是每人都必须发），语气符合人设。` : '') + (near ? '这批是「附近」页：同城、附近的人发的，带本地生活和地点感。' : '') + `其余帖子由不同的路人账号发布（起各不相同的网名），话题生活化、有网感。${story ? '\n近期剧情（只作灵感，不要泄露秘密）：' + story : ''}\n用户网名「${u}」。`;
+    const fmt = k === 'xhs' ? '{"posts":[{"au":"发帖人","ti":"笔记标题18字内","tx":"正文50~120字","lk":点赞数,"cm":[{"w":"网名","t":"评论20字内"}]}]}' : '{"posts":[{"au":"发帖人","tx":"短帖正文，100字内，口语","lk":点赞数,"cm":[{"w":"网名","t":"回复20字内"}]}]}';
+    const out = await callAPI([{ role: 'system', content: sys }, { role: 'user', content: `生成6条帖子，每条1~3条评论，点赞数随意（0~3000）。只输出JSON：${fmt}` }], { max: 1800, f: k });
+    const j = parseJSON(out); const ps = (j.posts || []).slice(0, 8);
+    ps.forEach((p, i) => { if (!p || !p.tx) return; const x = acc.find((q) => cName(q) === p.au || q.name === p.au); f[k].posts.unshift({ id: 'f' + Date.now().toString(36) + i, au: x ? cName(x) : String(p.au || '路人').slice(0, 12), cid: x ? x.id : '', ti: String(p.ti || '').slice(0, 30), tx: String(p.tx).slice(0, 300), near: near ? 1 : 0, lk: Math.max(0, Math.round(Number(p.lk) || 0)), cm: (p.cm || []).slice(0, 3).map((c) => ({ w: String(c.w || '路人').slice(0, 12), t: String(c.t || '').slice(0, 80) })), ts: Date.now() }); });
+    f[k].posts = f[k].posts.slice(0, 40); const mine = ps.filter((p) => acc.some((q) => cName(q) === p.au || q.name === p.au)); if (mine.length) fmEv(`${A.n}上${mine.slice(0, 3).map((p) => p.au + '发了「' + clip(p.ti || p.tx, 14) + '」').join('，')}`); save();
+  } catch (e) { tip(e.message || String(e)); } finally { fmBusy[k] = 0; render(); }
+});
+const fmReact = guard('互动', async (k, p, mode) => {
+  const f = FM(); const key = k + p.id; if (fmBusy[key]) return; fmBusy[key] = 1; render();
+  try {
+    const acc = fmAcc(k); const u = fmMe(k); const au = acc.find((q) => q.id === p.cid);
+    const who = mode === 'mine' ? acc.slice(0, 6) : (au ? [au] : []);
+    const sys = `你负责写虚构社区「${FMA[k].n}」里的互动。` + (who.length ? `参与互动的账号：\n${who.map((x) => '【' + cName(x) + '】' + (x.rel ? '（与' + u + '的关系：' + x.rel + '）' : '') + fmPersona(x)).join('\n')}\n他们按人设和与${u}的关系回应。` : '') + '另外可有1~2条路人评论。';
+    const out = await callAPI([{ role: 'system', content: sys }, { role: 'user', content: `${mode === 'mine' ? u + '发了' : '帖子'}「${p.ti ? p.ti + '：' : ''}${clip(p.tx, 150)}」，已有评论：${p.cm.map((c) => c.w + '：' + c.t).join('；') || '无'}。${mode === 'mine' ? '生成2~4条评论（有账号的人按人设是否会看到并评论自行决定）。' : '最后一条评论来自' + u + '，请' + (au ? cName(au) + '回复' + u + '，' : '') + '生成1~2条回复。'}只输出JSON：{"cm":[{"w":"名字","t":"评论25字内"}]}` }], { max: 500, f: k });
+    const j = parseJSON(out); (j.cm || []).slice(0, 4).forEach((c) => { if (!c || !c.t) return; p.cm.push({ w: String(c.w || '路人').slice(0, 12), t: String(c.t).slice(0, 80) }); const ac = acc.find((q) => cName(q) === c.w || q.name === c.w); if (ac) fmNt(k, `${ac.name}评论了你的帖子「${clip(p.ti || p.tx, 12)}」：${clip(c.t, 24)}`), fmEv(`${ac.name}在${FMA[k].n}评论了${u}的帖子：「${clip(c.t, 30)}」`); }); save();
+  } catch (e) { tip(e.message || String(e)); } finally { fmBusy[key] = 0; render(); }
+});
+const fmReply = guard('回复', async (k, x) => {
+  if (typeof x === 'string') x = { id: 's:' + x, name: x, rel: '陌生网友', _s: 1 };
+  const f = FM(); const key = 'dm' + k + x.id; if (fmBusy[key]) return; fmBusy[key] = 1; render();
+  try {
+    const l = f[k].dm[x.id] || (f[k].dm[x.id] = []); const u = fmMe(k); let wx = '';
+    if (x.fmLink && x.fmLink[k]) { wx = (D().msgs[x.id] || []).filter((m) => m.t && m.k !== 'sys').slice(-4).map((m) => (m.r === 'u' ? '对方' : '你') + '：' + clip(m.t, 40)).join(' / '); }
+    const sys = `你扮演「${cName(x)}」，正在「${FMA[k].n}」上和「${u}」私信聊天。${x.rel ? '你们的关系：' + x.rel + '。' : ''}\n${x._s ? '你是一个陌生网友，性格自拟，说话自然。' : fmPersona(x)}\n${x.fmLink && x.fmLink[k] ? '你们已经交换了微信，' + (wx ? '你们在微信里最近聊过：' + wx + '。' : '') : '你们目前只在这个平台私信。'}\n口语、简短，回复1~3条消息（每条40字内），符合人设。只输出JSON：{"m":["消息1","消息2"]}`;
+    const out = await callAPI([{ role: 'system', content: sys }, ...l.slice(-8).map((m) => ({ role: m.r === 'u' ? 'user' : 'assistant', content: m.t })).slice(-8)], { max: 400, f: k });
+    let ms; try { ms = parseJSON(out).m; } catch (e) { ms = [String(out).trim()]; } (ms || []).slice(0, 3).forEach((t) => { if (t) l.push({ r: 'c', t: String(t).slice(0, 120), ts: Date.now() }); }); fmEv(`${cName(x)}在${FMA[k].n}私信回复了${u}：「${clip((ms || [''])[0], 30)}」`); save();
+  } catch (e) { tip(e.message || String(e)); } finally { fmBusy[key] = 0; render(); }
+});
+const fmGenStr = guard('陌生人私信', async (k) => {
+  const f = FM(); if (fmBusy['s' + k]) return; fmBusy['s' + k] = 1; render();
+  try { const u = fmMe(k); let story = ''; try { story = storyText(2, 400); } catch (e) { /* ignore */ }
+    const out = await callAPI([{ role: 'system', content: `你负责生成虚构社区「${FMA[k].n}」里陌生网友发给「${u}」的私信，起各不相同的网名，内容多样（搭讪、请教、安利、求关注、误会认错人等），每条40字内。${story ? '近期剧情（只作灵感）：' + story : ''}` }, { role: 'user', content: '生成1~3条，也可以一条都没有。只输出JSON：{"s":[{"n":"网名","t":"私信内容"}]}' }], { max: 400, f: k });
+    const j = parseJSON(out); let n = 0; (j.s || []).slice(0, 3).forEach((q) => { if (!q || !q.n || !q.t) return; const nm = String(q.n).slice(0, 12); if (f[k].sn.indexOf(nm) < 0) f[k].sn.unshift(nm); (f[k].dm['s:' + nm] || (f[k].dm['s:' + nm] = [])).push({ r: 'c', t: String(q.t).slice(0, 100), ts: Date.now() }); n++; }); f[k].sn = f[k].sn.slice(0, 12);
+    if (n) fmEv(`${u}在${FMA[k].n}收到${n}条陌生人私信`); else tip('暂时没有新私信'); save();
+  } catch (e) { tip(e.message || String(e)); } finally { fmBusy['s' + k] = 0; render(); }
+});
+const fmAgo = (ts) => { const m = Math.floor((Date.now() - (ts || 0)) / 60000); return m < 1 ? '刚刚' : m < 60 ? m + '分钟前' : m < 1440 ? Math.floor(m / 60) + '小时前' : Math.floor(m / 1440) + '天前'; };
+const fmNum = (n) => (n >= 10000 ? (n / 10000).toFixed(1) + '万' : String(n));
+const fmV = (p) => (p.lk + (p.liked ? 1 : 0)) * 7 + (fmHue(p.id) % 90) + 20;
+function fmNt(k, t) { const S = FM()[k]; S.nt.unshift({ t, ts: Date.now() }); S.nt = S.nt.slice(0, 30); }
+function fmGrid(k, ps) { return `<div class="fm-wf"><div>${ps.filter((_, i) => i % 2 === 0).map((p) => fmCard(k, p)).join('')}</div><div>${ps.filter((_, i) => i % 2 === 1).map((p) => fmCard(k, p)).join('')}</div></div>`; }
+function fmCard(k, p) { const hue = fmHue(p.ti || p.tx); const x = p.cid && getC(p.cid); const cv = p.img && imgGet(p.img) ? `<img class="fm-img" src="${esc(imgGet(p.img))}" alt="" style="margin:0;border-radius:0">` : `<div class="fm-cv" style="background:hsl(${hue},70%,92%);color:hsl(${hue},45%,32%);min-height:${90 + (hue % 4) * 18}px">${esc(clip(p.ti || p.tx, 22))}</div>`; return `<div class="fm-card" data-act="fm_open" data-k="${k}" data-id="${p.id}">${cv}<div class="fm-t">${esc(clip(p.ti || p.tx, 28))}</div><div class="fm-f"><span class="fm-mi">${av(x ? cAv(x) : '', p.au)}</span><span>${esc(clip(p.au, 8))}</span><s>♡ ${fmNum(p.lk + (p.liked ? 1 : 0))}</s></div></div>`; }
+function fmTl(k, p) { const x = p.cid && getC(p.cid); const L = p.lk + (p.liked ? 1 : 0); return `<div class="fm-tl" data-act="fm_open" data-k="${k}" data-id="${p.id}">${av(x ? cAv(x) : '', p.au)}<div class="m"><div class="fm-n"><b>${esc(p.au)}</b> @${esc(clip(p.au, 10))} · ${fmAgo(p.ts)}</div><div class="fm-x">${p.ti ? `<b>${esc(p.ti)}</b><br>` : ''}${esc(p.tx)}</div>${p.img && imgGet(p.img) ? `<img class="fm-img" src="${esc(imgGet(p.img))}" alt="">` : ''}<div class="fm-ac"><span data-act="fm_open" data-k="${k}" data-id="${p.id}">💬 ${p.cm.length}</span><span data-act="fm_rt" data-k="${k}" data-id="${p.id}">🔁 ${p.rt || 0}</span><span data-act="fm_like" data-k="${k}" data-id="${p.id}" class="${p.liked ? 'on' : ''}">${p.liked ? '♥' : '♡'} ${fmNum(L)}</span><span>📊 ${fmNum(fmV(p))}</span><span data-act="fm_share" data-k="${k}" data-id="${p.id}">⤴</span></div></div></div>`; }
+function fmList(k, ps) { return k === 'xhs' ? fmGrid(k, ps) : ps.map((p) => fmTl(k, p)).join(''); }
+function fmEmpty(t) { return `<div class="xyp-tip" style="padding:40px 16px;text-align:center">${t}</div>`; }
+const fmSv = (d) => `<svg viewBox="0 0 24 24">${d}</svg>`; const FMI = { feed: fmSv('<path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/>'), search: fmSv('<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>'), notif: fmSv('<path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>'), dm: fmSv('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>') };
+function fmNavBar(k, tab) { const it = (t, ic, lb) => `<span class="${tab === t ? 'on' : ''}" data-act="fm_nav" data-k="${k}" data-v="${t}">${ic}${lb ? '<em>' + lb + '</em>' : ''}</span>`; return k === 'xhs' ? `<div class="fm-nav">${it('feed', '', '首页')}<span data-act="fm_shop"><em>商城</em></span><span class="fm-plus" data-act="fm_post" data-k="${k}">＋</span>${it('dm', '', '消息')}${it('me', '', '我')}</div>` : `<div class="fm-nav">${it('feed', FMI.feed)}${it('search', FMI.search)}${it('notif', FMI.notif)}${it('dm', FMI.dm)}</div><span class="fm-fab" data-act="fm_post" data-k="${k}">＋</span>`; }
+function fmPage(k) {
+  return (o) => {
+    const f = FM(); const S = f[k]; const A = FMA[k]; const tab = o.tab || 'feed'; const sub = o.sub || (k === 'xhs' ? 'disc' : 'rec'); const busy = fmBusy[k]; const xh = k === 'xhs';
+    const subs = (arr) => `<div class="fm-tb ${xh ? '' : 'x'}">${arr.map((t) => `<span class="${sub === t[0] ? 'on' : ''}" data-act="fm_sub" data-v="${t[0]}">${t[1]}</span>`).join('')}</div>`;
+    const rf = `<i data-act="${tab === 'dm' ? 'fm_sgen' : 'fm_gen'}" data-k="${k}" data-sub="${sub}">${busy || fmBusy['s' + k] ? '…' : '⟳'}</i>`;
+    let hd = '', body = '';
+    if (tab === 'feed') {
+      const me0 = fmMe(k);
+      hd = xh ? `<div class="fm-hd">${subs([['fol', '关注'], ['disc', '发现'], ['near', '附近']])}<span class="fm-ico">${rf}<i data-act="fm_q" data-k="${k}">🔍</i><i data-act="fm_acc" data-k="${k}">⚙</i></span></div>` : `<div class="fm-hd x"><span data-act="fm_nav" data-k="${k}" data-v="me">${av('', me0)}</span><b class="fm-lg">${A.n}</b><span class="fm-ico">${rf}<i data-act="fm_acc" data-k="${k}">⚙</i></span></div>${subs([['rec', '为你推荐'], ['fol', '正在关注']])}`;
+      let ps = S.posts; if (sub === 'fol') ps = ps.filter((p) => S.fol.indexOf(p.au) >= 0); else if (sub === 'near') ps = ps.filter((p) => p.near);
+      if (o.q) ps = ps.filter((p) => (p.tx + p.ti + p.au).indexOf(o.q) >= 0);
+      body = (o.q ? `<div class="xyp-tip" style="padding:6px 14px">搜索「${esc(o.q)}」 ${ps.length} 条 <i data-act="fm_qx" style="color:#ff2442;font-style:normal">清除</i></div>` : '') + (ps.length ? fmList(k, ps) : fmEmpty(sub === 'fol' ? '关注的人还没有帖子，去推荐页刷新一下。' : sub === 'near' ? '点右上角 ⟳ 生成附近的人发的笔记。' : '还没有内容，点右上角 ⟳ 让 AI 生成一批。' + (fmAcc(k).length ? '' : '<br>先点 ⚙ 选哪些联系人在这里有账号。')));
+    } else if (tab === 'search') {
+      hd = `<div class="fm-hd x"><b class="fm-lg">搜索</b></div>`;
+      const q = o.q || ''; const ps = q ? S.posts.filter((p) => (p.tx + p.ti + p.au).indexOf(q) >= 0) : [];
+      body = `<div class="fm-sb" data-act="fm_q" data-k="${k}">⌕ ${q ? esc(q) : '搜索帖子、用户'}</div>` + (q ? (ps.length ? fmList(k, ps) : fmEmpty('没有结果')) : fmEmpty('点上面的搜索框'));
+    } else if (tab === 'notif') {
+      hd = `<div class="fm-hd x"><b class="fm-lg">通知</b></div>`;
+      body = S.nt.length ? S.nt.map((n) => `<div class="fm-nt">🔔 ${esc(n.t)}<small>${fmAgo(n.ts)}</small></div>`).join('') : fmEmpty('暂时没有通知');
+    } else if (tab === 'dm') {
+      const nsub = o.dsub || 'msg';
+      hd = xh ? `<div class="fm-hd"><div class="fm-tb"><span class="${nsub === 'msg' ? 'on' : ''}" data-act="fm_dsub" data-v="msg">私信</span><span class="${nsub === 'nt' ? 'on' : ''}" data-act="fm_dsub" data-v="nt">通知</span></div><span class="fm-ico">${rf}</span></div>` : `<div class="fm-hd x"><b class="fm-lg">私信</b><span class="fm-ico">${rf}</span></div><div class="fm-tb x"><span class="${nsub === 'msg' ? 'on' : ''}" data-act="fm_dsub" data-v="msg">消息</span><span class="${nsub === 'req' ? 'on' : ''}" data-act="fm_dsub" data-v="req">陌生人请求${S.sn.length ? ' ' + S.sn.length : ''}</span></div>`;
+      const ac = fmAcc(k); const row = (x) => { const l = S.dm[x.id] || []; const m = l[l.length - 1]; return `<div class="fm-li" data-act="fm_dm" data-k="${k}" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${esc(cName(x))}</b><small>${esc(m ? clip(m.t, 24) : '还没聊过，点进去发消息')}</small></div><span class="t">${m ? fmAgo(m.ts) : ''}</span></div>`; };
+      const srow = S.sn.map((n) => { const l = S.dm['s:' + n] || []; const m = l[l.length - 1]; return `<div class="fm-li" data-act="fm_sdm" data-k="${k}" data-sn="${esc(n)}">${av('', n)}<div class="m"><b>${esc(n)}${xh ? ' <small style="display:inline;color:#ff2442">陌生人</small>' : ''}</b><small>${esc(m ? clip(m.t, 24) : '')}</small></div><span class="t">${m ? fmAgo(m.ts) : ''}</span></div>`; }).join('');
+      if (xh && nsub === 'nt') body = S.nt.length ? S.nt.map((n) => `<div class="fm-nt">🔔 ${esc(n.t)}<small>${fmAgo(n.ts)}</small></div>`).join('') : fmEmpty('暂时没有通知');
+      else if (!xh && nsub === 'req') body = srow || fmEmpty('点右上角 ⟳，可能收到陌生人私信');
+      else body = (ac.length ? ac.map(row).join('') : fmEmpty('还没有账号，点首页 ⚙ 选联系人')) + (xh ? srow : '') + (xh && !srow ? '<div class="xyp-tip" style="padding:14px;text-align:center">点右上角 ⟳，可能收到陌生人私信</div>' : '');
+    } else {
+      const sb = o.msub || 'mine'; const me0 = fmMe(k); const mine = S.posts.filter((p) => p.mine); const fv = S.posts.filter((p) => (xh ? p.fav : p.liked));
+      hd = `<div class="fm-hd x"><b class="fm-lg">我的</b><span class="fm-ico"><i data-act="fm_acc" data-k="${k}">⚙</i></span></div>`;
+      body = `<div class="fm-pfc">${av('', me0, 'lg')}<div><b style="font-size:17px">${esc(me0)}</b><div class="xyp-tip" style="padding:0">关注 ${S.fol.length}　粉丝 ${fmFans(k, me0).length}</div></div></div><div class="fm-tb ${xh ? '' : 'x'}"><span class="${sb === 'mine' ? 'on' : ''}" data-act="fm_msub" data-v="mine">${xh ? '笔记' : '帖子'}</span><span class="${sb === 'fav' ? 'on' : ''}" data-act="fm_msub" data-v="fav">${xh ? '收藏' : '喜欢'}</span></div>` + ((sb === 'mine' ? mine : fv).length ? fmList(k, sb === 'mine' ? mine : fv) : fmEmpty(sb === 'mine' ? '你还没发过帖，点发布。' : '还没有内容'));
+    }
+    return `<div class="xyp-pg fm-pg fm-${k}">${hd}<div class="fm-body">${body}</div>${fmNavBar(k, tab)}</div>`;
+  };
+}
+Object.assign(PAGES, {
+  store: () => { const f = FM(); return `<div class="xyp-pg"><div class="xyp-tip" style="padding:10px 14px">下载后图标会出现在桌面。</div>${Object.keys(FMA).map((k) => { const A = FMA[k]; const on = f.apps.indexOf(k) >= 0; return `<div class="xyp-li"><span class="xyp-av xyp-avt" style="background:${A.bg};color:#fff;border-radius:12px">${A.ic}</span><div class="m"><b>${A.n}</b><small>${esc(A.sub)}</small></div>${on ? `<span class="xyp-btn" data-act="open" data-p="${k}" style="margin:0 4px 0 0">打开</span><span class="xyp-btn dng" data-act="fm_del" data-k="${k}" style="margin:0">卸载</span>` : `<span class="xyp-btn pri" data-act="fm_get" data-k="${k}" style="margin:0">获取</span>`}</div>`; }).join('')}</div>`; },
+  xhs: fmPage('xhs'), xx: fmPage('xx'),
+  fmpost: (o) => { const f = FM(); const k = o.k; const S = f[k]; const p = S.posts.find((q) => q.id === o.id); if (!p) return '<div class="xyp-pg"><div class="xyp-tip" style="padding:30px">帖子不存在</div></div>'; const x = p.cid && getC(p.cid); const xh = k === 'xhs'; const on = S.fol.indexOf(p.au) >= 0; const L = p.lk + (p.liked ? 1 : 0); const hue = fmHue(p.ti || p.tx);
+    const who = `<div class="fm-ah" data-act="fm_user" data-k="${k}" data-nm="${esc(p.au)}" data-id="${p.cid || ''}">${av(x ? cAv(x) : '', p.au)}<div class="m"><b>${esc(p.au)}</b>${xh ? '' : `<small> @${esc(clip(p.au, 10))}</small>`}</div>${p.mine ? '' : `<span class="fm-fo ${on ? 'on' : ''}" data-act="fm_fol" data-k="${k}" data-nm="${esc(p.au)}">${on ? '已关注' : '关注'}</span>`}</div>`;
+    const cms = p.cm.map((c, i) => `<div class="fm-cm" data-act="fm_cm" data-k="${k}" data-id="${p.id}" data-re="${esc(c.w)}">${av('', c.w)}<div class="m"><b>${esc(c.w)}</b><div>${esc(c.t)}</div><small>${xh ? '回复' : fmAgo(p.ts)}</small></div></div>`).join('') || '<div class="xyp-tip" style="padding:14px">还没有评论，来说第一句</div>';
+    const img = p.img && imgGet(p.img) ? `<img class="fm-img" src="${esc(imgGet(p.img))}" alt="">` : (xh ? `<div class="fm-big" style="background:hsl(${hue},70%,92%);color:hsl(${hue},45%,32%)">${esc(clip(p.ti || p.tx, 30))}</div>` : '');
+    const tools = `${igReady() && !p.img ? `<span data-act="fm_img" data-k="${k}" data-id="${p.id}">${fmBusy['i' + p.id] ? '生成中…' : '🖼 生成配图'}</span>` : ''}${p.mine ? `<span data-act="fm_pdel" data-k="${k}" data-id="${p.id}">🗑 删除</span>` : ''}`;
+    if (xh) return `<div class="xyp-pg fm-pg fm-xhs">${who}<div class="fm-body">${img}<div class="fm-bd"><h4>${esc(p.ti || '')}</h4><div style="white-space:pre-wrap">${esc(p.tx)}</div><div class="fm-tm">${fmAgo(p.ts)}</div>${tools ? `<div class="fm-tools">${tools}</div>` : ''}</div><div class="xyp-h" style="padding:8px 14px 0">共 ${p.cm.length} 条评论${fmBusy[k + p.id] ? '（有人在回复…）' : ''}</div>${cms}</div><div class="fm-bar"><span class="in" data-act="fm_cm" data-k="${k}" data-id="${p.id}">说点什么…</span><span data-act="fm_like" data-k="${k}" data-id="${p.id}" class="${p.liked ? 'on' : ''}">${p.liked ? '♥' : '♡'} ${fmNum(L)}</span><span data-act="fm_fav" data-k="${k}" data-id="${p.id}" class="${p.fav ? 'on' : ''}">${p.fav ? '★' : '☆'}</span><span data-act="fm_cm" data-k="${k}" data-id="${p.id}">💬 ${p.cm.length}</span></div></div>`;
+    return `<div class="xyp-pg fm-pg fm-xx">${who}<div class="fm-body"><div class="fm-bx"><div class="fm-x" style="font-size:17px;white-space:pre-wrap">${p.ti ? `<b>${esc(p.ti)}</b>\n` : ''}${esc(p.tx)}</div>${img}<div class="fm-tm">${fmAgo(p.ts)} · ${fmNum(fmV(p))} 次浏览</div>${tools ? `<div class="fm-tools">${tools}</div>` : ''}<div class="fm-ac big"><span data-act="fm_cm" data-k="${k}" data-id="${p.id}">💬 ${p.cm.length}</span><span data-act="fm_rt" data-k="${k}" data-id="${p.id}">🔁 ${p.rt || 0}</span><span data-act="fm_like" data-k="${k}" data-id="${p.id}" class="${p.liked ? 'on' : ''}">${p.liked ? '♥' : '♡'} ${fmNum(L)}</span><span data-act="fm_share" data-k="${k}" data-id="${p.id}">⤴</span></div></div>${cms}</div><div class="fm-bar"><span class="in" data-act="fm_cm" data-k="${k}" data-id="${p.id}">发布你的回复</span></div></div>`; },
+  fmdm: (o) => { const f = FM(); const x = o.sn ? { id: 's:' + o.sn, name: o.sn } : getC(o.id); if (!x) return '<div class="xyp-pg"></div>'; const k = o.k; const l = f[k].dm[x.id] || []; const lk = !!(x.fmLink && x.fmLink[k]);
+    return `<div class="xyp-pg fm-pg"><div class="xyp-center" style="margin:8px 0"><span class="xyp-btn pri" data-act="fm_send" data-k="${k}" data-id="${x.id}">发消息</span><span class="xyp-btn" data-act="fm_wx" data-k="${k}" data-id="${x.id}">${lk ? '已交换微信' : '交换微信'}</span></div>${l.map((m) => `<div class="fm-b ${m.r === 'u' ? 'me' : ''}"><span>${esc(m.t)}</span></div>`).join('') || '<div class="xyp-tip" style="padding:20px;text-align:center">还没聊过，发第一条吧。</div>'}${fmBusy['dm' + k + x.id] ? '<div class="xyp-tip" style="padding:6px 14px">对方正在输入…</div>' : ''}</div>`; },
+  fmuser: (o) => { const f = FM(); const k = o.k; const S = f[k]; const nm = o.nm; const x = o.id && getC(o.id); const me = nm === fmMe(k); const fans = fmFans(k, nm); const fol = fmFol(k, nm); const on = S.fol.indexOf(nm) >= 0; const ps = S.posts.filter((p) => p.au === nm);
+    return `<div class="xyp-pg fm-pg fm-${k}"><div class="fm-cover"></div><div class="fm-pfh">${av(x ? cAv(x) : '', nm, 'lg')}<span class="fm-btns">${x ? `<span class="fm-bt" data-act="fm_dm" data-k="${k}" data-id="${x.id}">私信</span>` : ''}${me ? '' : `<span class="fm-bt ${on ? 'f' : 'p'}" data-act="fm_fol" data-k="${k}" data-nm="${esc(nm)}">${on ? '已关注' : '关注'}</span>`}</span></div><div class="fm-nm"><b style="font-size:18px">${esc(nm)}</b><div class="xyp-tip" style="padding:0">@${esc(clip(nm, 10))}</div></div><div class="fm-cnt"><span><b>${fol.length + (me ? S.fol.length : 0)}</b> 关注</span><span><b>${fans.length}</b> 粉丝</span></div><div class="xyp-tip" style="padding:0 14px 6px">粉丝：${fans.map(esc).join('、') || '暂无'}</div>${x ? `<div class="xyp-tip" style="padding:0 14px">TA 关注了（点击切换，互关就双向点）：</div><div style="padding:4px 10px">${fmAcc(k).filter((q) => cName(q) !== nm).map((q) => `<span class="xyp-btn ${fol.indexOf(cName(q)) >= 0 ? 'pri' : ''}" data-act="fm_afw" data-k="${k}" data-nm="${esc(nm)}" data-to="${esc(cName(q))}">${esc(cName(q))}</span>`).join('') || '<span class="xyp-tip">还没有其他账号</span>'}</div>` : ''}<div class="fm-tb ${k === 'xhs' ? '' : 'x'}"><span class="on">${k === 'xhs' ? '笔记' : '帖子'} ${ps.length}</span></div>${ps.length ? fmList(k, ps) : fmEmpty('还没有帖子')}</div>`; },
+  fmacc: (o) => { const f = FM(); const k = o.k; const cs = D().contacts.filter((x) => !x.isGroup && wxOk(x)); return `<div class="xyp-pg"><div class="xyp-f" style="margin:10px 14px 0"><label>我在「${FMA[k].n}」的昵称</label><input id="fm-me" value="${esc(f[k].me)}" placeholder="${esc(myNick())}" data-fmme="${k}"></div><div class="xyp-f xyp-tog" style="margin:10px 14px 0"><div><div style="font-size:14px">告知正文</div><div class="xyp-tip" style="padding:2px 0 0">开启后，你在这里发的帖、评论、私信、关注等会在下一次生成正文时一次性告诉正文；关闭则正文完全不知道</div></div><span class="xyp-btn ${f[k].tell === false ? '' : 'pri'}" data-act="fm_tell" data-k="${k}" style="margin:0">${f[k].tell === false ? '已关闭' : '已开启'}</span></div><div class="xyp-tip" style="padding:8px 14px">勾选的联系人在这里有账号，会发帖、评论、可以私信，并自动被你关注；没勾选的没有账号。</div>${cs.map((x) => `<div class="xyp-li" data-act="fm_tg" data-k="${k}" data-id="${x.id}">${av(cAv(x), cName(x))}<div class="m"><b>${esc(cName(x))}</b><small>${esc(x.rel || '')}</small></div><span class="xyp-btn ${f[k].acc.indexOf(x.id) >= 0 ? 'pri' : ''}" style="margin:0">${f[k].acc.indexOf(x.id) >= 0 ? '有账号' : '无'}</span></div>`).join('')}</div>`; },
+});
+Object.assign(TITLES, { store: '应用商店', xhs: '种草', xx: '短帖', fmpost: '详情', fmdm: '私信', fmacc: '账号', fmuser: '主页' });
+function fmAct(a, t) {
+  const f = FM(); const k = t.dataset.k; const o = cur(); const id = t.dataset.id; const S = k && f[k];
+  if (a === 'fm_hpg') { homePg = Number(t.dataset.i) || 0; const e = winEl.querySelector('.xyp-pgs'); if (e) e.scrollTo({ left: homePg * e.clientWidth, behavior: 'smooth' }); winEl.querySelectorAll('.xyp-dots i').forEach((d, j) => d.classList.toggle('on', j === homePg)); }
+  else if (a === 'fm_get') { if (f.apps.indexOf(k) < 0) f.apps.push(k); save(); render(); tip('已下载「' + FMA[k].n + '」，回桌面查看'); }
+  else if (a === 'fm_del') { f.apps = f.apps.filter((q) => q !== k); save(); render(); }
+  else if (a === 'fm_tell') { S.tell = S.tell === false; if (S.tell === false) f.pend = f.pend.filter((x) => x.indexOf(FMA[k].n) < 0); save(); render(); }
+  else if (a === 'fm_nav') { o.tab = t.dataset.v; o.dsub = ''; if (o.tab !== 'search' || o.q === undefined) o.q = ''; render(); }
+  else if (a === 'fm_sub') { o.sub = t.dataset.v; render(); }
+  else if (a === 'fm_dsub') { o.dsub = t.dataset.v; render(); }
+  else if (a === 'fm_msub') { o.msub = t.dataset.v; render(); }
+  else if (a === 'fm_shop') go('shop');
+  else if (a === 'fm_q') inputBox('搜索', '关键词…', (v) => { o.q = (v || '').trim(); if (o.q && k === 'xx' && o.tab !== 'search') { /* 留在当前页 */ } render(); }, o.q || '');
+  else if (a === 'fm_qx') { o.q = ''; render(); }
+  else if (a === 'fm_gen') fmGenFeed(o.p, t.dataset.sub === 'near');
+  else if (a === 'fm_acc') go('fmacc', { k: o.p });
+  else if (a === 'fm_tg') { const s = S.acc; const i = s.indexOf(id); const cx = getC(id); if (i >= 0) s.splice(i, 1); else { s.push(id); if (cx && S.fol.indexOf(cName(cx)) < 0) S.fol.push(cName(cx)); } save(); render(); }
+  else if (a === 'fm_open') go('fmpost', { k, id });
+  else if (a === 'fm_dm') go('fmdm', { k, id });
+  else if (a === 'fm_sdm') go('fmdm', { k, sn: t.dataset.sn, id: 's:' + t.dataset.sn });
+  else if (a === 'fm_user') go('fmuser', { k, nm: t.dataset.nm, id: t.dataset.id });
+  else if (a === 'fm_fol') { const nm = t.dataset.nm; const i = S.fol.indexOf(nm); if (i >= 0) S.fol.splice(i, 1); else { S.fol.push(nm); fmEv(`${myNick()}在${FMA[k].n}关注了${nm}`); } save(); render(); }
+  else if (a === 'fm_afw') { const nm = t.dataset.nm; const to = t.dataset.to; const l = S.fw[nm] || (S.fw[nm] = []); const i = l.indexOf(to); if (i >= 0) l.splice(i, 1); else l.push(to); save(); render(); }
+  else if (a === 'fm_sgen') fmGenStr(o.p);
+  else if (a === 'fm_post') { const kk = k || o.p; const doPost = (ti, tx) => { ti = String(ti || '').trim().slice(0, 30); tx = String(tx || '').trim(); if (!ti && !tx) return; if (!tx) tx = ti; const p = { id: 'f' + Date.now().toString(36), au: fmMe(kk), cid: '', ti, tx: tx.slice(0, 400), lk: 0, cm: [], ts: Date.now(), mine: 1 }; f[kk].posts.unshift(p); fmEv(`${myNick()}在${FMA[kk].n}发了「${clip(ti || tx, 24)}」`); save(); render(); if (fmAcc(kk).length) fmReact(kk, p, 'mine'); };
+    { fmTi = ''; const sty = 'width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:6px;font:inherit;font-size:14px;background:transparent;color:inherit'; showDlg(`<div class="bx"><b>发布到「${FMA[kk].n}」</b><input id="fm-ti" maxlength="30" placeholder="${kk === 'xhs' ? '标题' : '标题（可不填）'}" style="${sty};margin:10px 0 0"><textarea id="xyp-dlg-in" rows="4" placeholder="正文…" style="${sty};margin:10px 0;resize:none"></textarea><div class="bt"><span data-act="dlgno">取消</span><span class="ok" data-act="dlgok">确定</span></div></div>`); dlgFn = (v) => doPost(fmTi, v); setTimeout(() => { const i = $('fm-ti'); if (i) i.focus(); }, 50); } }
+  else if (a === 'fm_like') { const p = S.posts.find((q) => q.id === id); if (!p) return; p.liked = !p.liked; if (p.liked && p.cid) fmEv(`${myNick()}给${p.au}在${FMA[k].n}的帖子点了赞`); save(); render(); }
+  else if (a === 'fm_fav') { const p = S.posts.find((q) => q.id === id); if (!p) return; p.fav = !p.fav; save(); render(); }
+  else if (a === 'fm_rt') { const p = S.posts.find((q) => q.id === id); if (!p) return; p.rt = (p.rt || 0) + 1; S.posts.unshift({ id: 'f' + Date.now().toString(36), au: fmMe(k), cid: '', ti: '', tx: '转发 @' + p.au + '：' + clip(p.tx, 80), lk: 0, cm: [], ts: Date.now(), mine: 1 }); if (p.cid) fmEv(`${myNick()}在${FMA[k].n}转发了${p.au}的帖子`); save(); tip('已转发'); render(); }
+  else if (a === 'fm_share') { const p = S.posts.find((q) => q.id === id); if (!p) return; try { win.navigator.clipboard.writeText((p.ti ? p.ti + '\n' : '') + p.tx); tip('已复制内容'); } catch (e) { tip('复制失败'); } }
+  else if (a === 'fm_cm') { const p = S.posts.find((q) => q.id === id); if (!p) return; const re = t.dataset.re; inputBox(re ? '回复 ' + re : '评论', '说点什么…', (v) => { v = (v || '').trim(); if (!v) return; p.cm.push({ w: fmMe(k), t: (re ? '回复 ' + re + '：' : '') + v.slice(0, 100) }); if (p.cid) fmEv(`${myNick()}在${FMA[k].n}评论了${p.au}的帖子：「${clip(v, 30)}」`); save(); render(); if (p.cid) fmReact(k, p, 'reply'); }); }
+  else if (a === 'fm_pdel') { S.posts = S.posts.filter((q) => q.id !== id); save(); back(); }
+  else if (a === 'fm_img') { const p = S.posts.find((q) => q.id === id); if (!p || fmBusy['i' + id]) return; fmBusy['i' + id] = 1; render(); igGen((p.ti ? p.ti + '，' : '') + clip(p.tx, 80) + '，社交平台配图，竖构图', { max: 1024, q: 0.85 }).then((iid) => { p.img = iid; save(); }).catch((e) => tip(e.message || String(e))).finally(() => { fmBusy['i' + id] = 0; render(); }); }
+  else if (a === 'fm_send') { const x = id.indexOf('s:') === 0 ? { id, name: id.slice(2), _s: 1, rel: '陌生网友' } : getC(id); if (!x) return; inputBox('私信 ' + (x._s ? x.name : cName(x)), '说点什么…', (v) => { v = (v || '').trim(); if (!v) return; (S.dm[x.id] || (S.dm[x.id] = [])).push({ r: 'u', t: v.slice(0, 200), ts: Date.now() }); fmEv(`${myNick()}在${FMA[k].n}私信${x._s ? x.name : cName(x)}：「${clip(v, 30)}」`); save(); render(); fmReply(k, x._s ? x.name : x); }); }
+  else if (a === 'fm_wx') { let x = getC(id); if (!x && id.indexOf('s:') === 0) { const nm = id.slice(2); x = { id: 'n' + Date.now().toString(36), isChar: false, npc: true, auto: true, name: nm, remark: '', rel: '网友', persona: '', avatar: '', know: 'auto' }; D().contacts.push(x); S.dm[x.id] = S.dm[id] || []; delete S.dm[id]; S.sn = S.sn.filter((q) => q !== nm); o.id = x.id; delete o.sn; } if (!x) return; if (!x.fmLink) x.fmLink = {}; x.fmLink[k] = 1; (S.dm[x.id] || (S.dm[x.id] = [])).push({ r: 'u', t: '（我们互换了微信，之后微信和这里的聊天互相知道）', ts: Date.now() }); fmEv(`${myNick()}和${cName(x)}在${FMA[k].n}交换了微信`); save(); render(); }
+}
+{ const st = $('xyp-style'); if (st) st.textContent += `.xyp-pgs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.xyp-pgs::-webkit-scrollbar{display:none}.xyp-pgs>.xyp-apps{flex:0 0 100%;scroll-snap-align:start;align-content:start}.xyp-dots{display:flex;justify-content:center;gap:8px;margin-top:16px}.xyp-dots i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.25;cursor:pointer}.xyp-dots i.on{opacity:.8}.fm-nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.fm-nav span.on svg{stroke-width:2.4}.fm-xx .fm-nav{padding:9px 0 11px}.fm-xx .fm-nav span{padding:2px 14px}.fm-hd .fm-ico i{font-size:17px}.fm-pg{display:flex;flex-direction:column;min-height:100%;padding:0}.fm-body{flex:1;overflow:auto}.fm-hd{display:flex;align-items:center;padding:10px 12px 4px;gap:8px}.fm-hd.x{padding:10px 14px 6px}.fm-lg{font-size:17px;margin:0 auto}.fm-ico{margin-left:auto;display:flex;gap:14px}.fm-ico i,.fm-hd i{font-style:normal;cursor:pointer;font-size:16px}.fm-tb{display:flex;gap:18px;font-size:16px}.fm-tb span{cursor:pointer;opacity:.5;padding-bottom:3px;white-space:nowrap}.fm-tb span.on{opacity:1;font-weight:700;border-bottom:2px solid #ff2442}.fm-tb.x{gap:0;border-bottom:1px solid rgba(128,128,128,.2)}.fm-tb.x span{flex:1;text-align:center;padding:11px 0;border:0;position:relative}.fm-tb.x span.on::after{content:'';position:absolute;left:30%;right:30%;bottom:0;height:4px;border-radius:2px;background:#1d9bf0}
+.fm-wf{display:flex;gap:6px;padding:6px}.fm-wf>div{flex:1;min-width:0}.fm-card{border-radius:8px;overflow:hidden;background:rgba(128,128,128,.1);margin-bottom:6px;cursor:pointer}.fm-cv{padding:12px;font-size:15px;font-weight:700;line-height:1.4;display:flex;align-items:flex-end}.fm-img{width:100%;display:block;border-radius:12px;margin:6px 0}.fm-t{padding:7px 8px 3px;font-size:13px;line-height:1.35}.fm-f{display:flex;align-items:center;gap:5px;padding:2px 8px 8px;font-size:11px;opacity:.75}.fm-f s{margin-left:auto;text-decoration:none}.fm-mi .xyp-av{width:16px;height:16px;font-size:8px}
+.fm-nav{display:flex;justify-content:space-around;align-items:center;border-top:1px solid rgba(128,128,128,.2);padding:8px 0 10px;font-size:15px}.fm-nav span{cursor:pointer;opacity:.55;display:flex;flex-direction:column;align-items:center}.fm-nav span.on{opacity:1;font-weight:700}.fm-nav em{font-style:normal;font-size:12px}.fm-nav .fm-plus{background:#ff2442;color:#fff;border-radius:9px;padding:4px 13px;font-size:17px;font-weight:700;opacity:1}.fm-fab{position:absolute;right:14px;bottom:62px;width:46px;height:46px;border-radius:50%;background:#1d9bf0;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.fm-tl{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid rgba(128,128,128,.18);cursor:pointer}.fm-tl .m{flex:1;min-width:0}.fm-n{font-size:13px;opacity:.75}.fm-n b{opacity:1;font-weight:700;font-size:14px}.fm-x{margin:2px 0 6px;line-height:1.5;word-break:break-word}.fm-ac{display:flex;justify-content:space-between;font-size:12px;opacity:.7;max-width:270px}.fm-ac span{cursor:pointer}.fm-ac span.on{color:#f91880;opacity:1}.fm-ac.big{max-width:none;font-size:15px;padding:10px 4px;border-top:1px solid rgba(128,128,128,.18);margin-top:8px}
+.fm-ah{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(128,128,128,.15);cursor:pointer}.fm-ah .m{flex:1}.fm-ah small{opacity:.6;font-weight:400}.fm-fo{border:1px solid #ff2442;color:#ff2442;border-radius:14px;padding:3px 12px;font-size:12px;cursor:pointer}.fm-xx .fm-fo{border-color:currentColor;color:inherit;font-weight:700}.fm-fo.on{opacity:.6}.fm-big{margin:12px;min-height:200px;border-radius:10px;display:flex;align-items:center;padding:22px;font-size:22px;font-weight:700;line-height:1.35}.fm-bd{padding:0 14px;line-height:1.7}.fm-bd h4{font-size:17px;margin-bottom:6px}.fm-tm{opacity:.55;font-size:11px;margin:8px 0}.fm-tools{display:flex;gap:14px;font-size:12px;opacity:.8}.fm-tools span{cursor:pointer}.fm-bx{padding:12px 14px}
+.fm-cm{display:flex;gap:8px;padding:8px 14px;font-size:13px;cursor:pointer}.fm-cm .xyp-av{width:26px;height:26px;font-size:10px}.fm-cm small{opacity:.55}.fm-bar{display:flex;align-items:center;gap:14px;border-top:1px solid rgba(128,128,128,.2);padding:9px 12px;font-size:13px}.fm-bar .in{flex:1;background:rgba(128,128,128,.12);border-radius:16px;padding:7px 12px;opacity:.7;cursor:pointer}.fm-bar span{cursor:pointer}.fm-bar span.on{color:#ff2442}
+.fm-li{display:flex;gap:10px;align-items:center;padding:10px 14px;cursor:pointer}.fm-li .m{flex:1;min-width:0}.fm-li small{display:block;opacity:.6}.fm-li .t{opacity:.5;font-size:11px}.fm-nt{padding:11px 14px;border-bottom:1px solid rgba(128,128,128,.15);font-size:13px}.fm-nt small{display:block;opacity:.5}.fm-sb{margin:10px 14px;padding:9px 14px;border-radius:20px;background:rgba(128,128,128,.12);opacity:.8;cursor:pointer}.fm-pfc{display:flex;gap:12px;align-items:center;padding:14px}
+.fm-cover{height:84px;background:rgba(128,128,128,.28)}.fm-pfh{display:flex;align-items:flex-end;padding:0 14px;margin-top:-28px}.fm-pfh .xyp-av{width:60px;height:60px;border:3px solid rgba(255,255,255,.9)}.fm-btns{margin-left:auto;display:flex;gap:8px}.fm-bt{border:1px solid rgba(128,128,128,.5);border-radius:18px;padding:5px 14px;font-weight:700;font-size:13px;cursor:pointer}.fm-bt.f{background:#0f1419;color:#fff;border-color:#0f1419}.fm-bt.p{background:#ff2442;color:#fff;border-color:#ff2442}.fm-xx .fm-bt.p{background:#0f1419;border-color:#0f1419}.fm-nm{padding:6px 14px}.fm-cnt{display:flex;gap:16px;padding:2px 14px 6px;font-size:13px;opacity:.85}.fm-b{display:flex;padding:3px 12px}.fm-b.me{justify-content:flex-end}.fm-b span{max-width:75%;padding:7px 10px;border-radius:8px;background:rgba(128,128,128,.15);word-break:break-word}.fm-b.me span{background:#95ec69;color:#111}`; }
+
+
 
   const renderMsgs = () => {
     const el = $('xyp-msgs'); const o = cur(); if (!el || o.p !== 'chat') return;
@@ -1709,7 +1890,7 @@ ${p.lk.length || p.cm.length ? `<div style="margin-top:6px;padding:6px 8px;backg
     else if (a === 'mcm') inputBox('评论 ' + mn(p.a), '说点什么…', (v) => { v = (v || '').trim(); if (!v) return; p.cm.push({ w: me, t: v.slice(0, 120), ts: Date.now() }); save(); momEv(as, `评论了${mn(p.a)}的朋友圈「${clip(p.t, 24)}」：「${clip(v, 50)}」`, p.a === 'char' ? 'char' : ''); render(); if (as === 'u') genMomCm(p.id); });
   };
   // ===== 快速自定义（气泡/字体/壁纸/图标）→ 生成 CSS，可导出，也可当主题导入 =====
-  const APP_N = { wx: '微信', cp: '查手机', live: '直播', mywal: '钱包', shop: '购物', loc: '定位', album: '角色图册', theme: '美化', settings: '设置' };
+  const APP_N = { store: '应用商店', xhs: '种草', xx: '短帖', wx: '微信', cp: '查手机', live: '直播', mywal: '钱包', shop: '购物', loc: '定位', album: '角色图册', theme: '美化', settings: '设置' };
   const decoD = () => { if (!cfg.deco) cfg.deco = {}; if (!cfg.deco.ic) cfg.deco.ic = {}; return cfg.deco; };
   const hexOK = (h) => /^#[0-9a-f]{6}$/i.test(h || '');
   const inkOf = (h) => { const n = parseInt(h.slice(1), 16); return (((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000) > 150 ? '#111' : '#fff'; };
@@ -1811,6 +1992,7 @@ else if (a === 'open') { const p0 = t.dataset.p; const go0 = () => go(p0, p0 ===
       if (!g) { g = { id: 'g' + Date.now().toString(36), isGroup: true, isChar: false, remark: '', rel: '', avatar: '', know: 'auto' }; d.contacts.push(g); }
       g.name = nm; g.members = mem; save(); if (o.id === 'new') { nav.pop(); go('chat', { id: g.id }); } else back();
     }
+    else if (/^fm_/.test(a)) fmAct(a, t);
     else if (/^(mom|mgen|mgc|mpost|mdel|mlike|mcm)$/.test(a)) momAct(a, t);
     else if (a === 'aladd') { upTarget = 'al'; fileIn.multiple = true; fileIn.click(); }
     else if (a === 'aladdurl') inputBox('图片链接', 'https://…（图片直链）', (v) => { v = (v || '').trim(); if (!/^https?:\/\//.test(v)) { tip('链接要以 http 开头'); return; } mineAdd(cur().tab || '生活', v); });
@@ -2010,7 +2192,19 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
   winEl.addEventListener('pointermove', (e) => {
     if (!dg) return;
     if (!dg.on) { if (Math.hypot(e.clientX - dg.sx, e.clientY - dg.sy) > 8) { clearTimeout(dg.t); dg = null; } return; }
-    const a = dg.a; const par = a.parentElement;
+    const a = dg.a; let par = a.parentElement; const pgsE = a.closest('.xyp-pgs');
+    if (pgsE) {
+      const pr = pgsE.getBoundingClientRect(); const dirE = e.clientX < pr.left + 26 ? -1 : e.clientX > pr.right - 26 ? 1 : 0;
+      if (dirE !== dg.edge) { dg.edge = dirE; clearTimeout(dg.et); if (dirE) dg.et = setTimeout(() => { const cw = pgsE.clientWidth || 1; const cu = Math.round(pgsE.scrollLeft / cw); const to = Math.max(0, Math.min(pgsE.children.length - 1, cu + dirE)); if (to !== cu) { homePg = to; dg.sc = Date.now() + 500; pgsE.scrollTo({ left: to * cw, behavior: 'smooth' }); } }, 450); }
+      const tp = Date.now() < (dg.sc || 0) ? null : [...pgsE.children].find((p) => { const q = p.getBoundingClientRect(); return e.clientX >= q.left && e.clientX < q.right; });
+      if (tp && tp !== par && tp.classList.contains('xyp-apps')) {
+        const pb2 = tp.getBoundingClientRect(); const px2 = e.clientX - pb2.left; const py2 = e.clientY - pb2.top;
+        const kids2 = [...tp.children]; const ov = kids2.find((k) => { const l = k.offsetLeft - tp.offsetLeft; const t = k.offsetTop - tp.offsetTop; return px2 > l && px2 < l + k.offsetWidth && py2 > t && py2 < t + k.offsetHeight; });
+        const last = kids2[kids2.length - 1]; const below = !last || py2 > last.offsetTop - tp.offsetTop + last.offsetHeight;
+        if (ov) ov.before(a); else if (below) tp.appendChild(a); else return;
+        dg.cross = 1; par = tp; a.style.transform = 'none'; const r0 = a.getBoundingClientRect(); a.style.transform = `translate(${e.clientX - dg.gx - r0.left}px,${e.clientY - dg.gy - r0.top}px) scale(1.14)`; return;
+      }
+    }
     // 图标跟手
     a.style.transform = 'none'; const r = a.getBoundingClientRect();
     a.style.transform = `translate(${e.clientX - dg.gx - r.left}px,${e.clientY - dg.gy - r.top}px) scale(1.14)`;
@@ -2025,11 +2219,11 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
     a.style.transform = 'none'; const r2 = a.getBoundingClientRect(); a.style.transform = `translate(${e.clientX - dg.gx - r2.left}px,${e.clientY - dg.gy - r2.top}px) scale(1.14)`;
   });
   const endDg = () => {
-    if (!dg) return; clearTimeout(dg.t); const g = dg; dg = null; if (!g.on) return;
+    if (!dg) return; clearTimeout(dg.t); clearTimeout(dg.et); const g = dg; dg = null; if (!g.on) return;
     noClickUntil = Date.now() + 400; const a = g.a; const par = a.parentElement;
     a.style.transition = 'transform .16s ease'; a.style.transform = 'none';
     setTimeout(() => { a.classList.remove('drag'); par.classList.remove('dragging'); [...par.children].forEach((k) => { k.style.transition = ''; k.style.transform = ''; }); }, 260);
-    const key = par.dataset.ord; cfg.order = cfg.order || {}; cfg.order[key] = [...par.children].map((k) => k.dataset.p || k.dataset.sec); saveCfg();
+    const key = par.dataset.ord; cfg.order = cfg.order || {}; cfg.order[key] = [...winEl.querySelectorAll('.xyp-apps[data-ord="' + key + '"]')].reduce((r, c) => r.concat([...c.children].map((k) => k.dataset.p || k.dataset.sec)), []); saveCfg(); if (g.cross) setTimeout(() => { try { render(); } catch (x) {  } }, 300);
   };
   winEl.addEventListener('pointerup', endDg); winEl.addEventListener('pointercancel', endDg);
   winEl.addEventListener('click', (e) => { if (Date.now() < noClickUntil) { e.stopPropagation(); return; } onClick(e); });
@@ -2043,6 +2237,7 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
     else if (t.dataset.vid) { cfg.vid = cfg.vid || {}; cfg.vid[t.dataset.vid] = t.checked ? 1 : 0; saveCfg(); }
     else if (t.dataset.lue) { cfg.lue = cfg.lue || {}; cfg.lue[t.dataset.lue] = t.checked ? 1 : 0; saveCfg(); }
     else if (t.dataset.cfgb) { cfg[t.dataset.cfgb] = t.checked; saveCfg(); if (t.dataset.cfgb === 'fab') fab.style.display = cfg.fab ? 'flex' : 'none'; if (t.dataset.cfgb === 'apiw') apiwSync(); if (t.dataset.cfgb === 'igOn' || t.dataset.cfgb === 'lsync') render(); }
+    else if (t.dataset.fmme) { FM()[t.dataset.fmme].me = t.value.trim(); save(); }
     else if (t.dataset.me) { D().user[t.dataset.me] = t.value.trim(); save(); }
     else if (t.dataset.lvpf) { meD()[t.dataset.lvpf] = t.value === '1'; save(); }
     else if (t.dataset.pfa) { const r = roomAt(cur()); if (r) { const pf = profOf(r); pf.amsg = !!t.checked; if (pf.amsg) streamerContact(r); save(); } }
@@ -2081,7 +2276,7 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
     bn.style.transform = ''; bn.classList.add('on'); void bn.offsetWidth; bn.classList.add('in'); clearTimeout(bnT); bnT = setTimeout(() => hideBn(true), 5000);
     if (winEl.classList.contains('on')) render();
   };
-  const jumpChat = (id) => { toast.classList.remove('on'); hideBn(false); if (!winEl.classList.contains('on')) setLock(!!cfg.lock); winEl.classList.add('on'); placeWin(); nav.length = 1; const cx = getC(id); if (cx && cx.live && !cx.friend) nav.push({ p: 'live' }, { p: 'chat', id }); else nav.push({ p: 'wx', tab: 'chats' }, { p: 'chat', id }); render(); };
+  const jumpChat = (id) => { toast.classList.remove('on'); hideBn(false); if (!winEl.classList.contains('on')) setLock(!!cfg.lock); winEl.classList.add('on'); noClickUntil = Date.now() + 500; placeWin(); nav.length = 1; const cx = getC(id); if (cx && cx.live && !cx.friend) nav.push({ p: 'live' }, { p: 'chat', id }); else nav.push({ p: 'wx', tab: 'chats' }, { p: 'chat', id }); render(); };
   toast.addEventListener('click', () => { const id = toast.dataset.id; if (id) jumpChat(id); else toast.classList.remove('on'); });
   { let st = null; bn.addEventListener('pointerdown', (e) => { st = { y: e.clientY, dy: 0 }; clearTimeout(bnT); bn.style.transition = 'none'; try { bn.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ } }); bn.addEventListener('pointermove', (e) => { if (!st) return; st.dy = Math.min(0, e.clientY - st.y); bn.style.transform = 'translateY(' + st.dy + 'px)'; bn.style.opacity = String(Math.max(0.2, 1 + st.dy / 80)); }); const endB = (ok) => { if (!st) return; const d = st.dy; st = null; bn.style.transition = ''; bn.style.opacity = ''; if (d < -28) { hideBn(true); return; } bn.style.transform = ''; if (ok && d > -6) jumpChat(bn.dataset.id); else bnT = setTimeout(() => hideBn(true), 3000); }; bn.addEventListener('pointerup', () => endB(true)); bn.addEventListener('pointercancel', () => endB(false)); }
   // 悬浮按钮 / 窗口位置（可拖动，设置里可重置）
@@ -2102,7 +2297,7 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
     const rend = () => { if (!rs) return; rs = null; cfg.miniW = winEl.offsetWidth; cfg.miniH = winEl.offsetHeight; saveCfg(); savePos(); };
     rz.addEventListener('pointerup', rend); rz.addEventListener('pointercancel', rend);
     $('xyp-rs').addEventListener('click', (e) => { e.stopPropagation(); const R = winEl.getBoundingClientRect().right; delete cfg.miniW; delete cfg.miniH; saveCfg(); applyMini(); winEl.style.left = Math.max(0, R - winEl.offsetWidth) + 'px'; savePos(); }); }
-  drag(fab, fab, FAB_KEY, () => { const on = winEl.classList.toggle('on'); if (on) { { const dd = D(); if (!dd.used) { dd.used = 1; save(); } } nav.length = 1; setLock(!!cfg.lock); placeWin(); render(); } });
+  drag(fab, fab, FAB_KEY, () => { const on = winEl.classList.toggle('on'); if (on) { noClickUntil = Date.now() + 500; { const dd = D(); if (!dd.used) { dd.used = 1; save(); } } nav.length = 1; setLock(!!cfg.lock); placeWin(); render(); } });
   let mpCtx = null, hkCap = '';
   const HK_DEF = { save: 'ctrl+z', back: 'arrowleft', close: 'escape', send: 'enter' }, HK_NM = { save: '保存图片 / 保存预设', back: '返回上一页', close: '收起小手机', send: '发送（聊天 / 弹幕 / 输入弹窗；换行用 Shift+Enter）' };
   const hkMap = () => Object.assign({}, HK_DEF, cfg.hkm || {});
@@ -2142,7 +2337,8 @@ winEl.addEventListener('touchmove', (e) => { if (dg && dg.on && e.cancelable) e.
   on('CHAT_CHANGED', () => { nav.length = 1; if (winEl.classList.contains('on')) render(); refreshBadge(); setTimeout(() => hideMarks(true), 600); });
   on('CHARACTER_MESSAGE_RENDERED', () => hideMarks(false));
   // 点空白处关闭窗口（只收起，不会中断正在进行的生成/回复）
-  const outClick = (e) => { try { if (winEl.classList.contains('on') && !root.contains(e.target) && cfg.outClose !== false && !cfg.pin) winEl.classList.remove('on'); } catch (x) { /* ignore */ } };
+  const inUi = (e) => { try { const p = e.composedPath ? e.composedPath() : [e.target]; return p.some((n) => n && n.nodeType === 1 && (root.contains(n) || /^xyp-|^xy-tj-/.test(n.id || '') || (n.classList && [...n.classList].some((c) => c.indexOf('xyp-') === 0)))); } catch (x) { return root.contains(e.target); } };
+  const outClick = (e) => { try { if (winEl.classList.contains('on') && !inUi(e) && cfg.outClose !== false && !cfg.pin) winEl.classList.remove('on'); } catch (x) { /* ignore */ } };
   doc.addEventListener('pointerdown', outClick, true);
   setTimeout(() => hideMarks(true), 800);
   // ---- 快速切换 API 悬浮窗 ----
